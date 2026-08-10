@@ -174,16 +174,26 @@
             display: inline-block;
             font-size: 0.78rem;
             border-radius: 6px;
-            padding: 3px 8px;
+            padding: 4px 8px;
             margin-top: 4px;
             font-weight: 700;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 100%;
             background: rgba(59, 130, 246, 0.15);
             color: #ffffff;
             border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        /* Neuer Container für mehrzeilige Listen in den Kacheln */
+        .kpi-sub-highlight-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-top: 4px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px dashed var(--card-border);
+            border-radius: 6px;
+            padding: 6px;
         }
 
         .controls-card {
@@ -235,7 +245,7 @@
             font-size: 0.72rem; 
             padding: 3px 8px; 
             border-radius: 6px; 
-            margin-left: 8px; 
+            margin-left: 4px; 
             font-weight: 800; 
             letter-spacing: 0.3px;
         }
@@ -370,22 +380,22 @@
         <div class="kpi-card">
             <div class="kpi-label">Meiste 180er (Verein)</div>
             <div class="kpi-value" id="kpiTop180">-</div>
-            <div><span class="kpi-sub-highlight" id="kpiTop180Player">-</span></div>
+            <div id="kpiTop180Player"><span class="kpi-sub-highlight">-</span></div>
         </div>
         <div class="kpi-card">
             <div class="kpi-label">Höchstes Finish</div>
             <div class="kpi-value" id="kpiTopFinish">-</div>
-            <div><span class="kpi-sub-highlight" id="kpiTopFinishPlayer">-</span></div>
+            <div id="kpiTopFinishPlayer"><span class="kpi-sub-highlight">-</span></div>
         </div>
         <div class="kpi-card">
             <div class="kpi-label">Bestes Short Leg</div>
             <div class="kpi-value" id="kpiTopShortLeg">-</div>
-            <div><span class="kpi-sub-highlight" id="kpiTopShortLegPlayer">-</span></div>
+            <div id="kpiTopShortLegPlayer"><span class="kpi-sub-highlight">-</span></div>
         </div>
         <div class="kpi-card">
             <div class="kpi-label">Höchster Punkteschnitt</div>
             <div class="kpi-value" id="kpiTopAvg">-</div>
-            <div><span class="kpi-sub-highlight" id="kpiTopAvgPlayer">-</span></div>
+            <div id="kpiTopAvgPlayer"><span class="kpi-sub-highlight">-</span></div>
         </div>
     </div>
 
@@ -609,7 +619,7 @@
         });
     }
 
-    // Hilfsfunktion zur Darstellung von Spitzenreitern (unterstützt auch mehrere Spieler)
+    // Zeigt ein oder mehrere Spieler sauber untereinander in der Kachel an
     function setKpiPlayerGroup(elemId, topPlayersList, defaultText) {
         const elem = document.getElementById(elemId);
         if (!elem) return;
@@ -617,17 +627,18 @@
         if (topPlayersList && topPlayersList.length > 0) {
             if (topPlayersList.length === 1) {
                 const p = topPlayersList[0];
-                elem.textContent = `${p.name} (TVK ${p.team})`;
-                elem.className = `kpi-sub-highlight badge-${p.team}`;
+                elem.innerHTML = `<span class="kpi-sub-highlight badge-${p.team}">${p.name} (TVK ${p.team})</span>`;
             } else {
-                // Bei Gleichstand mehrere Namen auflisten
-                const namesStr = topPlayersList.map(p => `${p.name} (TVK ${p.team})`).join(", ");
-                elem.textContent = namesStr;
-                elem.className = 'kpi-sub-highlight';
+                // Bei Gleichstand: Jeder Spieler bekommt eine eigene Zeile untereinander
+                const listItems = topPlayersList.map(p => 
+                    `<div style="margin: 2px 0;">
+                        ${p.name} <span class="team-badge badge-${p.team}" style="font-size:0.65rem; padding: 2px 5px;">TVK ${p.team}</span>
+                    </div>`
+                ).join("");
+                elem.innerHTML = `<div class="kpi-sub-highlight-list">${listItems}</div>`;
             }
         } else {
-            elem.textContent = defaultText;
-            elem.className = 'kpi-sub-highlight';
+            elem.innerHTML = `<span class="kpi-sub-highlight">${defaultText}</span>`;
         }
     }
 
@@ -656,7 +667,7 @@
             setKpiPlayerGroup('kpiTopFinishPlayer', [], 'Kein High Finish');
         }
 
-        // Top Short Leg (Minimale Darts) -> unterstützt Gleichstand
+        // Top Short Leg (Minimale Darts) -> untereinander bei Gleichstand
         let shortLegValues = playersData.map(p => p.shortLeg).filter(val => val !== null && val > 0);
         if (shortLegValues.length > 0) {
             let minShortLeg = Math.min(...shortLegValues);
@@ -680,24 +691,20 @@
         }
     }
 
-    // Hilfsfunktion zum Vergleichen zweier Spieler für die Rangliste
     function comparePlayers(a, b) {
         const wrA = a.matches ? (a.wins / a.matches) : 0;
         const wrB = b.matches ? (b.wins / b.matches) : 0;
         
-        // 1. Win-Rate vergleichen
         if (wrA !== wrB) {
             return wrB - wrA;
         }
         
-        // 2. Bei gleicher Win-Rate -> Höherer AVG entscheidet
         const avgA = a.avg || 0;
         const avgB = b.avg || 0;
         if (avgA !== avgB) {
             return avgB - avgA;
         }
 
-        // 3. Bei gleichem AVG -> Höhere Leg-Differenz
         const legDiffA = a.legsWon - a.legsLost;
         const legDiffB = b.legsWon - b.legsLost;
         return legDiffB - legDiffA;
