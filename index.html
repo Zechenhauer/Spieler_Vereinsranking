@@ -609,13 +609,22 @@
         });
     }
 
-    function setKpiPlayer(elemId, playerObj, defaultText) {
+    // Hilfsfunktion zur Darstellung von Spitzenreitern (unterstützt auch mehrere Spieler)
+    function setKpiPlayerGroup(elemId, topPlayersList, defaultText) {
         const elem = document.getElementById(elemId);
         if (!elem) return;
         
-        if (playerObj) {
-            elem.textContent = `${playerObj.name} (TVK ${playerObj.team})`;
-            elem.className = `kpi-sub-highlight badge-${playerObj.team}`;
+        if (topPlayersList && topPlayersList.length > 0) {
+            if (topPlayersList.length === 1) {
+                const p = topPlayersList[0];
+                elem.textContent = `${p.name} (TVK ${p.team})`;
+                elem.className = `kpi-sub-highlight badge-${p.team}`;
+            } else {
+                // Bei Gleichstand mehrere Namen auflisten
+                const namesStr = topPlayersList.map(p => `${p.name} (TVK ${p.team})`).join(", ");
+                elem.textContent = namesStr;
+                elem.className = 'kpi-sub-highlight';
+            }
         } else {
             elem.textContent = defaultText;
             elem.className = 'kpi-sub-highlight';
@@ -626,44 +635,48 @@
         document.getElementById('kpiTotalPlayers').textContent = playersData.length;
 
         // Top 180er
-        let top180 = [...playersData].sort((a,b) => b.h180 - a.h180)[0];
-        if(top180 && top180.h180 > 0) {
-            document.getElementById('kpiTop180').textContent = top180.h180;
-            setKpiPlayer('kpiTop180Player', top180, 'Noch keine 180er');
+        let max180 = Math.max(...playersData.map(p => p.h180 || 0));
+        if (max180 > 0) {
+            document.getElementById('kpiTop180').textContent = max180;
+            let top180Players = playersData.filter(p => p.h180 === max180);
+            setKpiPlayerGroup('kpiTop180Player', top180Players, 'Noch keine 180er');
         } else {
             document.getElementById('kpiTop180').textContent = '-';
-            setKpiPlayer('kpiTop180Player', null, 'Noch keine 180er');
+            setKpiPlayerGroup('kpiTop180Player', [], 'Noch keine 180er');
         }
 
         // Top HighFinish
-        let topFinish = [...playersData].sort((a,b) => b.highFinish - a.highFinish)[0];
-        if(topFinish && topFinish.highFinish > 0) {
-            document.getElementById('kpiTopFinish').textContent = topFinish.highFinish;
-            setKpiPlayer('kpiTopFinishPlayer', topFinish, 'Kein High Finish');
+        let maxFinish = Math.max(...playersData.map(p => p.highFinish || 0));
+        if (maxFinish > 0) {
+            document.getElementById('kpiTopFinish').textContent = maxFinish;
+            let topFinishPlayers = playersData.filter(p => p.highFinish === maxFinish);
+            setKpiPlayerGroup('kpiTopFinishPlayer', topFinishPlayers, 'Kein High Finish');
         } else {
             document.getElementById('kpiTopFinish').textContent = '-';
-            setKpiPlayer('kpiTopFinishPlayer', null, 'Kein High Finish');
+            setKpiPlayerGroup('kpiTopFinishPlayer', [], 'Kein High Finish');
         }
 
-        // Top Short Leg
-        let playersWithSL = playersData.filter(p => p.shortLeg !== null && p.shortLeg > 0);
-        let topShortLeg = playersWithSL.sort((a,b) => a.shortLeg - b.shortLeg)[0];
-        if(topShortLeg) {
-            document.getElementById('kpiTopShortLeg').textContent = `${topShortLeg.shortLeg} Darts`;
-            setKpiPlayer('kpiTopShortLegPlayer', topShortLeg, 'Kein Short Leg');
+        // Top Short Leg (Minimale Darts) -> unterstützt Gleichstand
+        let shortLegValues = playersData.map(p => p.shortLeg).filter(val => val !== null && val > 0);
+        if (shortLegValues.length > 0) {
+            let minShortLeg = Math.min(...shortLegValues);
+            document.getElementById('kpiTopShortLeg').textContent = `${minShortLeg} Darts`;
+            let topShortLegPlayers = playersData.filter(p => p.shortLeg === minShortLeg);
+            setKpiPlayerGroup('kpiTopShortLegPlayer', topShortLegPlayers, 'Kein Short Leg');
         } else {
             document.getElementById('kpiTopShortLeg').textContent = '-';
-            setKpiPlayer('kpiTopShortLegPlayer', null, 'Kein Short Leg');
+            setKpiPlayerGroup('kpiTopShortLegPlayer', [], 'Kein Short Leg');
         }
 
         // Top Avg
-        let topAvg = [...playersData].sort((a,b) => b.avg - a.avg)[0];
-        if(topAvg && topAvg.avg > 0) {
-            document.getElementById('kpiTopAvg').textContent = topAvg.avg.toFixed(2);
-            setKpiPlayer('kpiTopAvgPlayer', topAvg, 'Keine Daten');
+        let maxAvg = Math.max(...playersData.map(p => p.avg || 0));
+        if (maxAvg > 0) {
+            document.getElementById('kpiTopAvg').textContent = maxAvg.toFixed(2);
+            let topAvgPlayers = playersData.filter(p => p.avg === maxAvg);
+            setKpiPlayerGroup('kpiTopAvgPlayer', topAvgPlayers, 'Keine Daten');
         } else {
             document.getElementById('kpiTopAvg').textContent = '-';
-            setKpiPlayer('kpiTopAvgPlayer', null, 'Keine Daten');
+            setKpiPlayerGroup('kpiTopAvgPlayer', [], 'Keine Daten');
         }
     }
 
