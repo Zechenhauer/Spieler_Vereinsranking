@@ -78,20 +78,21 @@
             margin: 4px 0; 
         }
         
+        /* Base Badge Style für Highlights */
         .kpi-sub-highlight {
             display: inline-block;
             font-size: 0.78rem;
-            color: #ffffff;
-            background: rgba(59, 130, 246, 0.15);
-            border: 1px solid rgba(59, 130, 246, 0.3);
             border-radius: 6px;
             padding: 3px 8px;
             margin-top: 4px;
-            font-weight: 500;
+            font-weight: 700;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             max-width: 100%;
+            background: rgba(59, 130, 246, 0.15);
+            color: #ffffff;
+            border: 1px solid rgba(59, 130, 246, 0.3);
         }
 
         .controls-card {
@@ -132,7 +133,7 @@
 
         .player-cell { text-align: left; font-weight: bold; }
         
-        /* Team Badges */
+        /* Team Badges & Dynamic Colors */
         .team-badge { 
             display: inline-block; 
             font-size: 0.72rem; 
@@ -142,10 +143,10 @@
             font-weight: 800; 
             letter-spacing: 0.3px;
         }
-        .badge-1 { background-color: var(--team1-bg); color: #ffffff; }
-        .badge-2 { background-color: var(--team2-bg); color: #ffffff; }
-        .badge-3 { background-color: var(--team3-bg); color: #000000; } /* TVK 3: Gelb mit schwarzer Schrift */
-        .badge-4 { background-color: var(--team4-bg); color: #ffffff; }
+        .badge-1 { background-color: var(--team1-bg); color: #ffffff; border: none; }
+        .badge-2 { background-color: var(--team2-bg); color: #ffffff; border: none; }
+        .badge-3 { background-color: var(--team3-bg); color: #000000; border: none; } /* TVK 3: Gelb mit schwarzer Schrift */
+        .badge-4 { background-color: var(--team4-bg); color: #ffffff; border: none; }
 
         .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 15px; }
         .modal-content { background: #111a2e; border: 1px solid var(--card-border); border-radius: 12px; width: 100%; max-width: 650px; padding: 20px; position: relative; max-height: 90vh; overflow-y: auto; }
@@ -170,7 +171,7 @@
     <div class="header">
         <h1>TV KAPELLEN 1919 E.V.</h1>
         <h2>Vereins-Ranking Saison 2026/2027</h2>
-        <p>⚡ Datenpflege & Bereitstellung: Jürgen Schützendorf</p>
+        <p>Gesamtauswertung aller Ligaspieler über alle 4 Mannschaften</p>
     </div>
 
     <!-- KPI Summary -->
@@ -323,6 +324,19 @@
         renderTable();
     }
 
+    function setKpiPlayer(elemId, playerObj, defaultText) {
+        const elem = document.getElementById(elemId);
+        if (!elem) return;
+        
+        if (playerObj) {
+            elem.textContent = `${playerObj.name} (TVK ${playerObj.team})`;
+            elem.className = `kpi-sub-highlight badge-${playerObj.team}`;
+        } else {
+            elem.textContent = defaultText;
+            elem.className = 'kpi-sub-highlight';
+        }
+    }
+
     function calculateKPIs() {
         document.getElementById('kpiTotalPlayers').textContent = playersData.length;
 
@@ -330,20 +344,20 @@
         let top180 = [...playersData].sort((a,b) => b.h180 - a.h180)[0];
         if(top180 && top180.h180 > 0) {
             document.getElementById('kpiTop180').textContent = top180.h180;
-            document.getElementById('kpiTop180Player').textContent = `${top180.name} (TVK ${top180.team})`;
+            setKpiPlayer('kpiTop180Player', top180, 'Noch keine 180er');
         } else {
             document.getElementById('kpiTop180').textContent = '-';
-            document.getElementById('kpiTop180Player').textContent = 'Noch keine 180er';
+            setKpiPlayer('kpiTop180Player', null, 'Noch keine 180er');
         }
 
         // Top HighFinish
         let topFinish = [...playersData].sort((a,b) => b.highFinish - a.highFinish)[0];
         if(topFinish && topFinish.highFinish > 0) {
             document.getElementById('kpiTopFinish').textContent = topFinish.highFinish;
-            document.getElementById('kpiTopFinishPlayer').textContent = `${topFinish.name} (TVK ${topFinish.team})`;
+            setKpiPlayer('kpiTopFinishPlayer', topFinish, 'Kein High Finish');
         } else {
             document.getElementById('kpiTopFinish').textContent = '-';
-            document.getElementById('kpiTopFinishPlayer').textContent = 'Kein High Finish';
+            setKpiPlayer('kpiTopFinishPlayer', null, 'Kein High Finish');
         }
 
         // Top Short Leg
@@ -351,20 +365,20 @@
         let topShortLeg = playersWithSL.sort((a,b) => a.shortLeg - b.shortLeg)[0];
         if(topShortLeg) {
             document.getElementById('kpiTopShortLeg').textContent = `${topShortLeg.shortLeg} Darts`;
-            document.getElementById('kpiTopShortLegPlayer').textContent = `${topShortLeg.name} (TVK ${topShortLeg.team})`;
+            setKpiPlayer('kpiTopShortLegPlayer', topShortLeg, 'Kein Short Leg');
         } else {
             document.getElementById('kpiTopShortLeg').textContent = '-';
-            document.getElementById('kpiTopShortLegPlayer').textContent = 'Kein Short Leg';
+            setKpiPlayer('kpiTopShortLegPlayer', null, 'Kein Short Leg');
         }
 
         // Top Avg
         let topAvg = [...playersData].sort((a,b) => b.avg - a.avg)[0];
         if(topAvg && topAvg.avg > 0) {
             document.getElementById('kpiTopAvg').textContent = topAvg.avg.toFixed(2);
-            document.getElementById('kpiTopAvgPlayer').textContent = `${topAvg.name} (TVK ${topAvg.team})`;
+            setKpiPlayer('kpiTopAvgPlayer', topAvg, 'Keine Daten');
         } else {
             document.getElementById('kpiTopAvg').textContent = '-';
-            document.getElementById('kpiTopAvgPlayer').textContent = 'Keine Daten';
+            setKpiPlayer('kpiTopAvgPlayer', null, 'Keine Daten');
         }
     }
 
