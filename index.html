@@ -16,7 +16,6 @@
             --success: #22c55e;
             --danger: #ef4444;
 
-            /* Farbcodes für die Mannschaften */
             --team1-bg: #ef4444; /* Rot */
             --team2-bg: #f97316; /* Orange */
             --team3-bg: #3b82f6; /* Blau */
@@ -132,7 +131,6 @@
 
         .player-cell { text-align: left; font-weight: bold; }
         
-        /* Team Badges farblich nach Mannschaft */
         .team-badge { 
             display: inline-block; 
             font-size: 0.72rem; 
@@ -240,6 +238,7 @@
                     <th>Win-Rate</th>
                     <th>Legs (G:V)</th>
                     <th>Leg-Diff</th>
+                    <th>Darts / Leg</th>
                     <th>AVG</th>
                     <th>180er</th>
                     <th>High Finish</th>
@@ -247,7 +246,7 @@
                 </tr>
             </thead>
             <tbody id="rankingTableBody">
-                <tr><td colspan="11" style="text-align:center; padding: 20px;">Lade Daten aus Google Sheets...</td></tr>
+                <tr><td colspan="12" style="text-align:center; padding: 20px;">Lade Daten aus Google Sheets...</td></tr>
             </tbody>
         </table>
     </div>
@@ -346,7 +345,7 @@
             document.getElementById('kpiTopFinishPlayer').textContent = 'Kein High Finish';
         }
 
-        // Top Short Leg (am wenigsten Darts)
+        // Top Short Leg
         let playersWithSL = playersData.filter(p => p.shortLeg !== null && p.shortLeg > 0);
         let topShortLeg = playersWithSL.sort((a,b) => a.shortLeg - b.shortLeg)[0];
         if(topShortLeg) {
@@ -400,7 +399,7 @@
         tbody.innerHTML = '';
 
         if(filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding: 20px; color: var(--text-muted);">Keine Spieler vorhanden.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="12" style="text-align:center; padding: 20px; color: var(--text-muted);">Keine Spieler vorhanden.</td></tr>`;
             return;
         }
 
@@ -428,6 +427,7 @@
                 <td style="color:var(--accent-gold); font-weight:bold;">${winRate}%</td>
                 <td>${p.legsWon} : ${p.legsLost}</td>
                 <td>${legDiffFormatted}</td>
+                <td><b>${p.dartsPerLeg ? Math.round(p.dartsPerLeg) : '-'}</b></td>
                 <td><b>${p.avg ? p.avg.toFixed(2) : '0.00'}</b></td>
                 <td>${p.h180}</td>
                 <td>${p.highFinish ? p.highFinish : '-'}</td>
@@ -464,7 +464,7 @@
         document.getElementById('mHighFinish').textContent = p.highFinish || '-';
         document.getElementById('m180s').textContent = p.h180 || 0;
         document.getElementById('mBestShortLeg').textContent = p.shortLeg ? `${p.shortLeg} Darts` : '-';
-        document.getElementById('mDartsLeg').textContent = p.dartsPerLeg ? `${p.dartsPerLeg.toFixed(1)}` : '-';
+        document.getElementById('mDartsLeg').textContent = p.dartsPerLeg ? `${Math.round(p.dartsPerLeg)}` : '-';
         document.getElementById('mShortLegs').textContent = p.shortLegCount || 0;
 
         document.getElementById('m60').textContent = p.c60 || 0;
