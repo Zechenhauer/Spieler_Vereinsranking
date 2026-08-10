@@ -238,7 +238,7 @@
 
         .table-responsive { overflow-x: auto; border-radius: 10px; border: 1px solid var(--card-border); }
         table { width: 100%; border-collapse: collapse; background: var(--card-bg); font-size: 0.88rem; text-align: center; }
-        th, td { padding: 12px 10px; border-bottom: 1px solid var(--card-border); white-space: nowrap; }
+        th, td { padding: 12px 8px; border-bottom: 1px solid var(--card-border); white-space: nowrap; }
         th { background: #0d172a; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
         tbody tr { cursor: pointer; transition: background 0.15s; }
         tbody tr:hover { background: #1c2b47; }
@@ -315,7 +315,6 @@
         .modal-content { background: #0c1427; border: 2px solid var(--accent-gold); border-radius: 12px; width: 100%; max-width: 650px; padding: 20px; position: relative; max-height: 90vh; overflow-y: auto; color: #fff; }
         .close-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; }
         
-        /* Modal Styling für Doppel-Match Details */
         .match-modal-title { font-size: 1.2rem; font-weight: 800; color: var(--accent-gold); margin-bottom: 2px; }
         .match-modal-sub { color: #22c55e; font-size: 0.85rem; font-weight: bold; margin-bottom: 15px; }
         
@@ -824,6 +823,11 @@
         let dataset = currentMode === "einzel" ? [...einzelData] : [...doppelData];
 
         const titleCol = currentMode === "einzel" ? "Spieler" : "Doppel-Paarung";
+        
+        // Hier werden "HF" und "SL" als verkürtze Tabellen-Spaltenköpfe verwendet:
+        const hfCol = currentMode === "doppel" ? "HF" : "High Finish";
+        const slCol = currentMode === "doppel" ? "SL" : "Short Legs";
+
         thead.innerHTML = `
             <tr>
                 <th>Platz</th>
@@ -836,8 +840,8 @@
                 <th>Darts / Leg</th>
                 <th>AVG</th>
                 <th>180er</th>
-                <th>High Finish</th>
-                <th>Short Legs</th>
+                <th>${hfCol}</th>
+                <th>${slCol}</th>
             </tr>`;
 
         let filtered = dataset.filter(item => {
@@ -896,6 +900,9 @@
         }
 
         const titleCol = currentMode === "einzel" ? "Spieler" : "Doppel-Paarung";
+        const hfCol = currentMode === "doppel" ? "HF" : "High Finish";
+        const slCol = currentMode === "doppel" ? "SL" : "Short Legs";
+
         thead.innerHTML = `
             <tr>
                 <th>Platz</th>
@@ -908,8 +915,8 @@
                 <th>Darts / Leg</th>
                 <th>AVG</th>
                 <th>180er</th>
-                <th>High Finish</th>
-                <th>Short Legs</th>
+                <th>${hfCol}</th>
+                <th>${slCol}</th>
             </tr>`;
 
         if (currentMode === "einzel") {
@@ -1028,7 +1035,6 @@
         document.getElementById('playerModal').style.display = 'flex';
     }
 
-    // Öffnet das neue Doppel-Match-Modal
     function openDoppelModal(pairId) {
         const d = doppelData.find(x => x.id === pairId);
         if(!d) return;
@@ -1040,7 +1046,6 @@
         document.getElementById('dmPairName').textContent = d.pairName;
         document.getElementById('dmAvg').textContent = d.avg ? d.avg.toFixed(2) : '0.00';
 
-        // Darts pro Leg
         const dartsBody = document.getElementById('dmDartsBody');
         dartsBody.innerHTML = '';
         if (d.lastMatchDarts && d.lastMatchDarts.length > 0) {
@@ -1053,7 +1058,6 @@
             dartsBody.innerHTML = `<tr><td colspan="2" style="text-align:center; color:var(--text-muted);">Keine Darts-Daten vorhanden.</td></tr>`;
         }
 
-        // Scoring
         document.getElementById('dmScoringName').textContent = d.pairName;
         document.getElementById('dm60').textContent = d.c60 || 0;
         document.getElementById('dm80').textContent = d.c80 || 0;
@@ -1061,7 +1065,6 @@
         document.getElementById('dm140').textContent = d.c140 || '-';
         document.getElementById('dm180').textContent = d.h180_total || 0;
 
-        // Highlights mit Werfernamen aus Klammern
         document.getElementById('dm180Detail').innerHTML = `🎯 <b>180er:</b> ${d.lastMatch180Detail || (d.h180_total > 0 ? d.h180_total + 'x' : '-')}`;
         document.getElementById('dmHFDetail').innerHTML = `🔥 <b>High Finish:</b> ${d.lastMatchHFDetail || (d.highFinish_total > 0 ? d.highFinish_total : '-')}`;
 
