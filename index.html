@@ -15,6 +15,12 @@
             --text-muted: #94a3b8;
             --success: #22c55e;
             --danger: #ef4444;
+
+            /* Farbcodes für die Mannschaften */
+            --team1-bg: #ef4444; /* Rot */
+            --team2-bg: #f97316; /* Orange */
+            --team3-bg: #3b82f6; /* Blau */
+            --team4-bg: #a855f7; /* Violett */
         }
 
         * { box-sizing: border-box; }
@@ -72,7 +78,6 @@
             margin: 4px 0; 
         }
         
-        /* Farblich unterlegte Spieler-Highlights */
         .kpi-sub-highlight {
             display: inline-block;
             font-size: 0.78rem;
@@ -127,7 +132,7 @@
 
         .player-cell { text-align: left; font-weight: bold; }
         
-        /* Gelber TVK Badge */
+        /* Team Badges farblich nach Mannschaft */
         .team-badge { 
             display: inline-block; 
             font-size: 0.72rem; 
@@ -135,10 +140,13 @@
             border-radius: 6px; 
             margin-left: 8px; 
             font-weight: 800; 
-            color: #000000;
-            background-color: var(--accent-gold);
+            color: #ffffff;
             letter-spacing: 0.3px;
         }
+        .badge-1 { background-color: var(--team1-bg); }
+        .badge-2 { background-color: var(--team2-bg); }
+        .badge-3 { background-color: var(--team3-bg); }
+        .badge-4 { background-color: var(--team4-bg); }
 
         .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 15px; }
         .modal-content { background: #111a2e; border: 1px solid var(--card-border); border-radius: 12px; width: 100%; max-width: 650px; padding: 20px; position: relative; max-height: 90vh; overflow-y: auto; }
@@ -413,7 +421,7 @@
                 <td class="${rankClass}">${rank}</td>
                 <td class="player-cell">
                     ${p.name}
-                    <span class="team-badge">TVK ${p.team}</span>
+                    <span class="team-badge badge-${p.team}">TVK ${p.team}</span>
                 </td>
                 <td>${p.matches}</td>
                 <td><span style="color:var(--success); font-weight:bold;">${p.wins}</span> : <span style="color:var(--danger); font-weight:bold;">${p.losses}</span></td>
