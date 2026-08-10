@@ -16,7 +16,7 @@
             --success: #22c55e;
             --danger: #ef4444;
 
-            /* Deine angepassten Mannschaftsfarben */
+            /* Deine Mannschaftsfarben */
             --team1-bg: #ff0a00; /* Rot */
             --team2-bg: #00f5ff; /* Cyan-Blau */
             --team3-bg: #ffd700; /* Gelb */
@@ -117,7 +117,7 @@
         }
         .user-logout-btn:hover { background: var(--card-bg); color: #fff; }
 
-        /* Umschalt-Tabs (Einzel / Doppel) */
+        /* Umschalt-Tabs */
         .tab-controls {
             display: flex;
             justify-content: center;
@@ -249,7 +249,6 @@
         tbody tr { cursor: pointer; transition: background 0.15s; }
         tbody tr:hover { background: #1c2b47; }
 
-        /* Highlight Row for Logged in Player */
         tr.logged-in-user-row {
             background: rgba(59, 130, 246, 0.2) !important;
             border-left: 4px solid var(--accent);
@@ -340,7 +339,6 @@
 </head>
 <body>
 
-<!-- Login Overlay -->
 <div class="login-overlay" id="loginOverlay">
     <div class="login-box">
         <h2>TV Kapellen 1919 e.V.</h2>
@@ -369,7 +367,7 @@
         <button class="tab-btn" id="tabDoppel" onclick="switchTab('doppel')">👥 Doppel-Ranking</button>
     </div>
 
-    <!-- Personalised Player Card Banner -->
+    <!-- Personal Banner -->
     <div class="personal-banner" id="personalBanner">
         <div class="personal-banner-title">
             <span>🎯 Deine aktuelle Position in der Gesamttabelle</span>
@@ -447,7 +445,6 @@
         </table>
     </div>
 
-    <!-- Admin Panel -->
     <div class="admin-panel" id="adminPanel">
         <h3>⚙️ Admin-Verwaltung: Spieler-Passwörter</h3>
         <div class="admin-form">
@@ -459,7 +456,6 @@
     </div>
 </div>
 
-<!-- Modal: Digitale Spielerkarte -->
 <div class="modal-overlay" id="playerModal" onclick="closeModal(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
         <button class="close-btn" onclick="closeModalDirect()">&times;</button>
@@ -523,7 +519,7 @@
         { name: "Ludger Schledorn", pass: "ludger123", isAdmin: false }
     ];
 
-    let currentMode = "einzel"; // "einzel" oder "doppel"
+    let currentMode = "einzel";
     let einzelData = [];
     let doppelData = [];
     let loggedInPlayerName = "";
@@ -631,20 +627,32 @@
         renderPersonalBanner();
     }
 
-    function setKpiPlayerGroup(elemId, topList, defaultText) {
+    // Zeigt Werfer im Doppel oder Einzel an (untereinander bei Gleichstand)
+    function setKpiPlayerGroup(elemId, topList, defaultText, kpiType) {
         const elem = document.getElementById(elemId);
         if (!elem) return;
         
         if (topList && topList.length > 0) {
             if (topList.length === 1) {
                 const item = topList[0];
-                const name = currentMode === "einzel" ? item.name : item.pairName;
-                elem.innerHTML = `<span class="kpi-sub-highlight badge-${item.team}">${name} (TVK ${item.team})</span>`;
+                let displayName = currentMode === "einzel" ? item.name : item.pairName;
+                
+                if (currentMode === "doppel") {
+                    if (kpiType === "180" && item.h180_player) displayName = item.h180_player;
+                    if (kpiType === "hf" && item.highFinish_player) displayName = item.highFinish_player;
+                }
+
+                elem.innerHTML = `<span class="kpi-sub-highlight badge-${item.team}">${displayName} (TVK ${item.team})</span>`;
             } else {
+                // Bei Gleichstand: Zeile für Zeile untereinander
                 const listItems = topList.map(item => {
-                    const name = currentMode === "einzel" ? item.name : item.pairName;
+                    let displayName = currentMode === "einzel" ? item.name : item.pairName;
+                    if (currentMode === "doppel") {
+                        if (kpiType === "180" && item.h180_player) displayName = item.h180_player;
+                        if (kpiType === "hf" && item.highFinish_player) displayName = item.highFinish_player;
+                    }
                     return `<div style="margin: 2px 0;">
-                        ${name} <span class="team-badge badge-${item.team}" style="font-size:0.65rem; padding: 2px 5px;">TVK ${item.team}</span>
+                        ${displayName} <span class="team-badge badge-${item.team}" style="font-size:0.65rem; padding: 2px 5px;">TVK ${item.team}</span>
                     </div>`;
                 }).join("");
                 elem.innerHTML = `<div class="kpi-sub-highlight-list">${listItems}</div>`;
@@ -665,7 +673,7 @@
         if (max180 > 0) {
             document.getElementById('kpiTop180').textContent = max180;
             let top = dataset.filter(x => (x.h180 || x.h180_total || 0) === max180);
-            setKpiPlayerGroup('kpiTop180Player', top, 'Noch keine 180er');
+            setKpiPlayerGroup('kpiTop180Player', top, 'Noch keine 180er', '180');
         } else {
             document.getElementById('kpiTop180').textContent = '-';
             setKpiPlayerGroup('kpiTop180Player', [], 'Noch keine 180er');
@@ -676,7 +684,7 @@
         if (maxFinish > 0) {
             document.getElementById('kpiTopFinish').textContent = maxFinish;
             let top = dataset.filter(x => (x.highFinish || x.highFinish_total || 0) === maxFinish);
-            setKpiPlayerGroup('kpiTopFinishPlayer', top, 'Kein High Finish');
+            setKpiPlayerGroup('kpiTopFinishPlayer', top, 'Kein High Finish', 'hf');
         } else {
             document.getElementById('kpiTopFinish').textContent = '-';
             setKpiPlayerGroup('kpiTopFinishPlayer', [], 'Kein High Finish');
