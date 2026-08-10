@@ -45,7 +45,7 @@
         .header h2 { margin: 5px 0 0 0; font-size: 1.1rem; color: var(--accent-gold); font-weight: 600; }
         .header p { margin: 5px 0 0 0; color: var(--text-muted); font-size: 0.85rem; }
 
-        /* Top KPI Cards (jetzt 5 Kacheln) */
+        /* Top KPI Cards Grid */
         .kpi-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -56,12 +56,42 @@
             background: var(--card-bg);
             border: 1px solid var(--card-border);
             border-radius: 10px;
-            padding: 15px;
+            padding: 14px 10px;
             text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
-        .kpi-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-        .kpi-value { font-size: 1.4rem; font-weight: bold; color: var(--accent-gold); margin-top: 5px; }
-        .kpi-sub { font-size: 0.8rem; color: var(--text-main); margin-top: 2px; }
+        .kpi-label { 
+            font-size: 0.72rem; 
+            color: var(--text-muted); 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
+            font-weight: 600;
+        }
+        .kpi-value { 
+            font-size: 1.25rem; 
+            font-weight: bold; 
+            color: var(--accent-gold); 
+            margin: 4px 0; 
+        }
+        
+        /* Farblich unterlegte Spieler-Highlights */
+        .kpi-sub-highlight {
+            display: inline-block;
+            font-size: 0.78rem;
+            color: #ffffff;
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            border-radius: 6px;
+            padding: 3px 8px;
+            margin-top: 4px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
 
         .controls-card {
             background: var(--card-bg);
@@ -132,32 +162,32 @@
         <p>Gesamtauswertung aller Ligaspieler über alle 4 Mannschaften</p>
     </div>
 
-    <!-- KPI Summary (mit Bestem Short Leg & Punkteschnitt mit 2 Dezimalstellen) -->
+    <!-- KPI Summary -->
     <div class="kpi-grid">
         <div class="kpi-card">
             <div class="kpi-label">Aktive Vereinsspieler</div>
             <div class="kpi-value" id="kpiTotalPlayers">0</div>
-            <div class="kpi-sub">in 4 Mannschaften</div>
+            <div><span class="kpi-sub-highlight">in 4 Mannschaften</span></div>
         </div>
         <div class="kpi-card">
             <div class="kpi-label">Meiste 180er (Verein)</div>
             <div class="kpi-value" id="kpiTop180">-</div>
-            <div class="kpi-sub" id="kpiTop180Player">-</div>
+            <div><span class="kpi-sub-highlight" id="kpiTop180Player">-</span></div>
         </div>
         <div class="kpi-card">
             <div class="kpi-label">Höchstes Finish</div>
             <div class="kpi-value" id="kpiTopFinish">-</div>
-            <div class="kpi-sub" id="kpiTopFinishPlayer">-</div>
+            <div><span class="kpi-sub-highlight" id="kpiTopFinishPlayer">-</span></div>
         </div>
         <div class="kpi-card">
             <div class="kpi-label">Bestes Short Leg</div>
             <div class="kpi-value" id="kpiTopShortLeg">-</div>
-            <div class="kpi-sub" id="kpiTopShortLegPlayer">-</div>
+            <div><span class="kpi-sub-highlight" id="kpiTopShortLegPlayer">-</span></div>
         </div>
         <div class="kpi-card">
             <div class="kpi-label">Höchster Punkteschnitt</div>
             <div class="kpi-value" id="kpiTopAvg">-</div>
-            <div class="kpi-sub" id="kpiTopAvgPlayer">-</div>
+            <div><span class="kpi-sub-highlight" id="kpiTopAvgPlayer">-</span></div>
         </div>
     </div>
 
@@ -289,6 +319,9 @@
         if(top180 && top180.h180 > 0) {
             document.getElementById('kpiTop180').textContent = top180.h180;
             document.getElementById('kpiTop180Player').textContent = `${top180.name} (${top180.team}. Team)`;
+        } else {
+            document.getElementById('kpiTop180').textContent = '-';
+            document.getElementById('kpiTop180Player').textContent = 'Noch keine 180er';
         }
 
         // Top HighFinish
@@ -296,6 +329,9 @@
         if(topFinish && topFinish.highFinish > 0) {
             document.getElementById('kpiTopFinish').textContent = topFinish.highFinish;
             document.getElementById('kpiTopFinishPlayer').textContent = `${topFinish.name} (${topFinish.team}. Team)`;
+        } else {
+            document.getElementById('kpiTopFinish').textContent = '-';
+            document.getElementById('kpiTopFinishPlayer').textContent = 'Kein High Finish';
         }
 
         // Top Short Leg (am wenigsten Darts)
@@ -306,14 +342,17 @@
             document.getElementById('kpiTopShortLegPlayer').textContent = `${topShortLeg.name} (${topShortLeg.team}. Team)`;
         } else {
             document.getElementById('kpiTopShortLeg').textContent = '-';
-            document.getElementById('kpiTopShortLegPlayer').textContent = '-';
+            document.getElementById('kpiTopShortLegPlayer').textContent = 'Kein Short Leg';
         }
 
-        // Top Avg (mit 2 Stellen hinter dem Komma)
+        // Top Avg
         let topAvg = [...playersData].sort((a,b) => b.avg - a.avg)[0];
         if(topAvg && topAvg.avg > 0) {
             document.getElementById('kpiTopAvg').textContent = topAvg.avg.toFixed(2);
             document.getElementById('kpiTopAvgPlayer').textContent = `${topAvg.name} (${topAvg.team}. Team)`;
+        } else {
+            document.getElementById('kpiTopAvg').textContent = '-';
+            document.getElementById('kpiTopAvgPlayer').textContent = 'Keine Daten';
         }
     }
 
