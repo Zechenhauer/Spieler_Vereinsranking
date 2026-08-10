@@ -402,7 +402,7 @@
 
             <label>Sortieren nach:</label>
             <select id="sortSelect" onchange="renderTable()">
-                <option value="winrate">Win-Rate (%) / Siege</option>
+                <option value="winrate">Win-Rate (%) / AVG</option>
                 <option value="avg">Punkteschnitt (AVG)</option>
                 <option value="180">Meiste 180er</option>
                 <option value="highfinish">Höchstes Finish</option>
@@ -597,7 +597,6 @@
         if(!list) return;
         list.innerHTML = "";
         
-        // Kombiniere registrierte Konten & Google Sheets Spieler
         const users = getUsers();
         let nameSet = new Set();
         users.forEach(u => nameSet.add(u.name));
@@ -668,14 +667,32 @@
         }
     }
 
+    // Hilfsfunktion zum Vergleichen zweier Spieler für die Rangliste
+    function comparePlayers(a, b) {
+        const wrA = a.matches ? (a.wins / a.matches) : 0;
+        const wrB = b.matches ? (b.wins / b.matches) : 0;
+        
+        // 1. Win-Rate vergleichen
+        if (wrA !== wrB) {
+            return wrB - wrA;
+        }
+        
+        // 2. Bei gleicher Win-Rate -> Höherer AVG entscheidet
+        const avgA = a.avg || 0;
+        const avgB = b.avg || 0;
+        if (avgA !== avgB) {
+            return avgB - avgA;
+        }
+
+        // 3. Bei gleichem AVG -> Höhere Leg-Differenz
+        const legDiffA = a.legsWon - a.legsLost;
+        const legDiffB = b.legsWon - b.legsLost;
+        return legDiffB - legDiffA;
+    }
+
     function getOverallRankList() {
         let sorted = [...playersData];
-        sorted.sort((a, b) => {
-            const wrA = a.matches ? (a.wins / a.matches) : 0;
-            const wrB = b.matches ? (b.wins / b.matches) : 0;
-            if (wrA !== wrB) return wrB - wrA;
-            return (b.legsWon - b.legsLost) - (a.legsWon - a.legsLost);
-        });
+        sorted.sort(comparePlayers);
         return sorted;
     }
 
@@ -749,12 +766,9 @@
 
         filtered.sort((a, b) => {
             if (sortSelect === 'winrate') {
-                const wrA = a.matches ? (a.wins / a.matches) : 0;
-                const wrB = b.matches ? (b.wins / b.matches) : 0;
-                if (wrA !== wrB) return wrB - wrA;
-                return (b.legsWon - b.legsLost) - (a.legsWon - a.legsLost);
+                return comparePlayers(a, b);
             } else if (sortSelect === 'avg') {
-                return b.avg - a.avg;
+                return (b.avg || 0) - (a.avg || 0);
             } else if (sortSelect === '180') {
                 return b.h180 - a.h180;
             } else if (sortSelect === 'highfinish') {
