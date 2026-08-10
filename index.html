@@ -16,9 +16,10 @@
             --success: #22c55e;
             --danger: #ef4444;
 
+            /* Farbcodes für die Mannschaften */
             --team1-bg: #ef4444; /* Rot */
             --team2-bg: #f97316; /* Orange */
-            --team3-bg: #3b82f6; /* Blau */
+            --team3-bg: #ffd700; /* Gelb für TVK 3 */
             --team4-bg: #a855f7; /* Violett */
         }
 
@@ -131,6 +132,7 @@
 
         .player-cell { text-align: left; font-weight: bold; }
         
+        /* Team Badges */
         .team-badge { 
             display: inline-block; 
             font-size: 0.72rem; 
@@ -138,13 +140,12 @@
             border-radius: 6px; 
             margin-left: 8px; 
             font-weight: 800; 
-            color: #ffffff;
             letter-spacing: 0.3px;
         }
-        .badge-1 { background-color: var(--team1-bg); }
-        .badge-2 { background-color: var(--team2-bg); }
-        .badge-3 { background-color: var(--team3-bg); }
-        .badge-4 { background-color: var(--team4-bg); }
+        .badge-1 { background-color: var(--team1-bg); color: #ffffff; }
+        .badge-2 { background-color: var(--team2-bg); color: #ffffff; }
+        .badge-3 { background-color: var(--team3-bg); color: #000000; } /* TVK 3: Gelb mit schwarzer Schrift */
+        .badge-4 { background-color: var(--team4-bg); color: #ffffff; }
 
         .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 15px; }
         .modal-content { background: #111a2e; border: 1px solid var(--card-border); border-radius: 12px; width: 100%; max-width: 650px; padding: 20px; position: relative; max-height: 90vh; overflow-y: auto; }
@@ -242,7 +243,7 @@
                     <th>AVG</th>
                     <th>180er</th>
                     <th>High Finish</th>
-                    <th>Bestes Short Leg</th>
+                    <th>Short Legs</th>
                 </tr>
             </thead>
             <tbody id="rankingTableBody">
@@ -431,7 +432,7 @@
                 <td><b>${p.avg ? p.avg.toFixed(2) : '0.00'}</b></td>
                 <td>${p.h180}</td>
                 <td>${p.highFinish ? p.highFinish : '-'}</td>
-                <td>${p.shortLeg ? p.shortLeg + ' Darts' : '-'}</td>
+                <td>${p.shortLegsList && p.shortLegsList.length > 0 ? p.shortLegsList.join(', ') : '-'}</td>
             `;
             tbody.appendChild(tr);
         });
