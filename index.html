@@ -280,48 +280,6 @@
         .badge-3 { background-color: var(--team3-bg); color: #000000; border: none; }
         .badge-4 { background-color: var(--team4-bg); color: #000000; border: none; }
 
-        .admin-panel {
-            background: var(--card-bg);
-            border: 1px solid var(--accent);
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 30px;
-            display: none;
-        }
-        .admin-panel h3 { margin-top: 0; color: var(--accent); font-size: 1.1rem; }
-        .admin-form { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; }
-        .admin-form input { flex: 1; min-width: 150px; }
-        .admin-form button {
-            background: var(--success);
-            color: #fff;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .admin-user-list { list-style: none; padding: 0; margin: 0; }
-        .admin-user-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            background: #0b1329;
-            border: 1px solid var(--card-border);
-            border-radius: 6px;
-            margin-bottom: 6px;
-            font-size: 0.85rem;
-        }
-        .delete-btn {
-            background: var(--danger);
-            color: #fff;
-            border: none;
-            padding: 3px 8px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.75rem;
-        }
-
         .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 15px; }
         .modal-content { background: #0c1427; border: 2px solid var(--accent-gold); border-radius: 12px; width: 100%; max-width: 650px; padding: 20px; position: relative; max-height: 90vh; overflow-y: auto; color: #fff; }
         .close-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; }
@@ -466,16 +424,6 @@
             </tbody>
         </table>
     </div>
-
-    <div class="admin-panel" id="adminPanel">
-        <h3>⚙️ Admin-Verwaltung: Spieler-Passwörter</h3>
-        <div class="admin-form">
-            <input type="text" id="adminNewName" placeholder="Spieler Name">
-            <input type="text" id="adminNewPass" placeholder="Neues Passwort">
-            <button onclick="adminAddUser()">Spieler Speichern</button>
-        </div>
-        <ul class="admin-user-list" id="adminUserList"></ul>
-    </div>
 </div>
 
 <!-- Modal: Einzel-Spielerkarte -->
@@ -604,7 +552,8 @@
         { name: "Thomas Kliver", pass: "thomas003", isAdmin: false },
         { name: "Florian Hartwich", pass: "florian003", isAdmin: false },
         { name: "Wolfram Senger", pass: "wolfram003", isAdmin: false },
-        { name: "Tim Siegel", pass: "tim002", isAdmin: false }
+        { name: "Tim Siegel", pass: "tim002", isAdmin: false },
+        { name: "Brian Müller", pass: "brian004", isAdmin: false }
     ];
 
     let currentMode = "einzel";
@@ -613,7 +562,6 @@
     let loggedInPlayerName = "";
     let currentUserIsAdmin = false;
 
-    // Synchronisiert Code-Passwörter automatisch mit dem lokalen Speicher
     function getUsers() {
         const stored = localStorage.getItem("tvk_registered_users");
         if (!stored) {
@@ -635,10 +583,6 @@
 
         localStorage.setItem("tvk_registered_users", JSON.stringify(localUsers));
         return localUsers;
-    }
-
-    function saveUsers(users) {
-        localStorage.setItem("tvk_registered_users", JSON.stringify(users));
     }
 
     function checkPasswordOnLoad() {
@@ -680,10 +624,6 @@
     function grantAccess() {
         document.getElementById("loginOverlay").style.display = "none";
         document.getElementById("mainContainer").style.display = "block";
-        if (currentUserIsAdmin) {
-            document.getElementById("adminPanel").style.display = "block";
-            renderAdminUserList();
-        }
         initRanking();
     }
 
@@ -704,7 +644,6 @@
         renderPersonalBanner();
     }
 
-    // Funktion für den Aktualisieren-Button (Spieler bleibt angemeldet)
     async function refreshData() {
         const btn = document.querySelector('.refresh-btn');
         if (btn) btn.textContent = "⏳ Lade...";
@@ -785,7 +724,6 @@
         document.getElementById('kpiLabel1').textContent = currentMode === "einzel" ? "Aktive Vereinsspieler" : "Aktive Doppel-Paare";
         document.getElementById('kpiTotalPlayers').textContent = dataset.length;
 
-        // Top 180er
         let max180 = Math.max(...dataset.map(x => x.h180 || x.h180_total || 0));
         if (max180 > 0) {
             document.getElementById('kpiTop180').textContent = max180;
@@ -796,7 +734,6 @@
             setKpiPlayerGroup('kpiTop180Player', [], 'Noch keine 180er');
         }
 
-        // Top HighFinish
         let maxFinish = Math.max(...dataset.map(x => x.highFinish || x.highFinish_total || 0));
         if (maxFinish > 0) {
             document.getElementById('kpiTopFinish').textContent = maxFinish;
@@ -807,7 +744,6 @@
             setKpiPlayerGroup('kpiTopFinishPlayer', [], 'Kein High Finish');
         }
 
-        // Top Short Leg
         let shortLegValues = dataset.map(x => x.shortLeg).filter(val => val !== null && val > 0);
         if (shortLegValues.length > 0) {
             let minShortLeg = Math.min(...shortLegValues);
@@ -819,7 +755,6 @@
             setKpiPlayerGroup('kpiTopShortLegPlayer', [], 'Kein Short Leg');
         }
 
-        // Top Avg
         let maxAvg = Math.max(...dataset.map(x => x.avg || 0));
         if (maxAvg > 0) {
             document.getElementById('kpiTopAvg').textContent = maxAvg.toFixed(2);
@@ -999,60 +934,6 @@
                 tbody.innerHTML = `<tr class="logged-in-user-row" onclick="openDoppelModal(${bestPair.id})">${createRowHTML(bestPair, idx + 1)}</tr>`;
                 banner.style.display = "block";
             } else { banner.style.display = "none"; }
-        }
-    }
-
-    function renderAdminUserList() {
-        const list = document.getElementById("adminUserList");
-        if (!list) return;
-        const users = getUsers();
-        list.innerHTML = "";
-
-        users.forEach((u, index) => {
-            const li = document.createElement("li");
-            li.className = "admin-user-item";
-            li.innerHTML = `
-                <span><b>${u.name}</b> (Passwort: <code>${u.pass}</code>) ${u.isAdmin ? '<span style="color:var(--accent-gold);">(Admin)</span>' : ''}</span>
-                ${!u.isAdmin ? `<button class="delete-btn" onclick="adminDeleteUser(${index})">Löschen</button>` : ''}
-            `;
-            list.appendChild(li);
-        });
-    }
-
-    function adminAddUser() {
-        const nameInput = document.getElementById("adminNewName");
-        const passInput = document.getElementById("adminNewPass");
-        const name = nameInput.value.trim();
-        const pass = passInput.value.trim();
-
-        if (!name || !pass) {
-            alert("Bitte Name und Passwort eingeben.");
-            return;
-        }
-
-        const users = getUsers();
-        if (users.some(u => u.name.toLowerCase() === name.toLowerCase())) {
-            alert("Dieser Spieler existiert bereits.");
-            return;
-        }
-
-        users.push({ name: name, pass: pass, isAdmin: false });
-        saveUsers(users);
-        nameInput.value = "";
-        passInput.value = "";
-        renderAdminUserList();
-        populateDatalist();
-        alert(`Spieler ${name} erfolgreich hinzugefügt!`);
-    }
-
-    function adminDeleteUser(index) {
-        let users = getUsers();
-        const deleted = users[index];
-        if (confirm(`Möchtest du ${deleted.name} wirklich löschen?`)) {
-            users.splice(index, 1);
-            saveUsers(users);
-            renderAdminUserList();
-            populateDatalist();
         }
     }
 
