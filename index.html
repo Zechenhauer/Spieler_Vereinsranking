@@ -319,6 +319,7 @@
 </head>
 <body>
 
+<!-- Login-Overlay mit neuem Aktualisieren-Button -->
 <div class="login-overlay" id="loginOverlay">
     <div class="login-box">
         <h2>TV Kapellen 1919 e.V.</h2>
@@ -329,6 +330,11 @@
 
         <input type="password" id="passwordInput" placeholder="Passwort..." onkeydown="if(event.key === 'Enter') checkPassword()">
         <button onclick="checkPassword()">Anmelden</button>
+        
+        <button class="login-refresh-btn" onclick="refreshData()" style="background: transparent; border: 1px solid var(--card-border); color: var(--text-muted); font-size: 0.8rem; margin-top: 10px;">
+            🔄 Passwörter / Daten aktualisieren
+        </button>
+
         <div class="login-error" id="loginError">Name oder Passwort falsch!</div>
     </div>
 </div>
@@ -644,19 +650,30 @@
         renderPersonalBanner();
     }
 
+    // Aktualisiert Passwörter & Tabellendaten (funktioniert auch auf dem Login-Screen)
     async function refreshData() {
-        const btn = document.querySelector('.refresh-btn');
-        if (btn) btn.textContent = "⏳ Lade...";
+        const btns = document.querySelectorAll('.refresh-btn, .login-refresh-btn');
+        btns.forEach(b => b.textContent = "⏳ Lade...");
 
         localStorage.removeItem("tvk_registered_users");
         getUsers();
+        populateDatalist();
 
-        await initRanking();
-
-        if (btn) {
-            btn.textContent = "✓ Aktualisiert!";
-            setTimeout(() => { btn.textContent = "🔄 Daten aktualisieren"; }, 2000);
+        // Falls bereits eingeloggt, auch Tabellen neu laden
+        if (localStorage.getItem("tvk_auth") === "true") {
+            await initRanking();
         }
+
+        btns.forEach(b => {
+            b.textContent = "✓ Aktualisiert!";
+            setTimeout(() => { 
+                if(b.classList.contains('login-refresh-btn')) {
+                    b.textContent = "🔄 Passwörter / Daten aktualisieren";
+                } else {
+                    b.textContent = "🔄 Daten aktualisieren"; 
+                }
+            }, 2000);
+        });
     }
 
     function populateDatalist() {
