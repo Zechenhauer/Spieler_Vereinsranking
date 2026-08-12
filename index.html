@@ -92,6 +92,22 @@
             padding-bottom: 15px;
             position: relative;
         }
+
+        /* Header Title Container mit Logos links & rechts */
+        .title-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .header-logo {
+            height: 50px;
+            width: auto;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+
         .header h1 { 
             margin: 0; 
             font-size: 1.8rem; 
@@ -306,7 +322,9 @@
 
         @media (max-width: 600px) {
             .modal-grid-5, .modal-grid-4 { grid-template-columns: repeat(2, 1fr); }
-            .header h1 { font-size: 1.4rem; }
+            .title-row { gap: 10px; }
+            .header-logo { height: 38px; }
+            .header h1 { font-size: 1.3rem; }
             .header-buttons {
                 position: static;
                 margin-top: 10px;
@@ -345,7 +363,11 @@
             <button class="user-btn refresh-btn" onclick="refreshData()">🔄 Daten aktualisieren</button>
             <button class="user-btn logout-btn" onclick="logout()">Abmelden</button>
         </div>
-        <h1>TV KAPELLEN 1919 e.V.</h1>
+        <div class="title-row">
+            <img src="https://lh3.googleusercontent.com/d/1PB4X2QrrMlaRlajQEWDtJxRP2c6VTsI5" alt="TV Kapellen Logo" class="header-logo">
+            <h1>TV KAPELLEN 1919 e.V.</h1>
+            <img src="https://lh3.googleusercontent.com/d/1PB4X2QrrMlaRlajQEWDtJxRP2c6VTsI5" alt="TV Kapellen Logo" class="header-logo">
+        </div>
         <h2>Vereins-Ranking Saison 2026/2027</h2>
         <p>⚡ Datenpflege & Bereitstellung: Jürgen Schützendorf</p>
     </div>
