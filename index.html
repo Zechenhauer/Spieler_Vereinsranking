@@ -101,10 +101,16 @@
             gap: 15px;
         }
 
+        /* Logos mit blauem Rahmen & elegantem Hintergrund */
         .header-logo {
-            height: 50px;
-            width: auto;
+            width: 55px;
+            height: 55px;
+            border-radius: 12px; /* Auf '50%' ändern, falls ein runder Kreis gewünscht ist */
             object-fit: contain;
+            border: 2px solid var(--accent);
+            background: #0b1329;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+            padding: 4px;
             flex-shrink: 0;
         }
 
@@ -323,7 +329,7 @@
         @media (max-width: 600px) {
             .modal-grid-5, .modal-grid-4 { grid-template-columns: repeat(2, 1fr); }
             .title-row { gap: 10px; }
-            .header-logo { height: 38px; }
+            .header-logo { width: 42px; height: 42px; }
             .header h1 { font-size: 1.3rem; }
             .header-buttons {
                 position: static;
@@ -672,7 +678,6 @@
         renderPersonalBanner();
     }
 
-    // Aktualisiert Passwörter & Tabellendaten (funktioniert auch auf dem Login-Screen)
     async function refreshData() {
         const btns = document.querySelectorAll('.refresh-btn, .login-refresh-btn');
         btns.forEach(b => b.textContent = "⏳ Lade...");
@@ -681,7 +686,6 @@
         getUsers();
         populateDatalist();
 
-        // Falls bereits eingeloggt, auch Tabellen neu laden
         if (localStorage.getItem("tvk_auth") === "true") {
             await initRanking();
         }
