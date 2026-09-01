@@ -93,7 +93,6 @@
             position: relative;
         }
 
-        /* Header Title Container mit Logos links & rechts */
         .title-row {
             display: flex;
             align-items: center;
@@ -101,11 +100,10 @@
             gap: 15px;
         }
 
-        /* Logos mit blauem Rahmen & elegantem Hintergrund */
         .header-logo {
             width: 55px;
             height: 55px;
-            border-radius: 12px; /* Auf '50%' ändern, falls ein runder Kreis gewünscht ist */
+            border-radius: 12px;
             object-fit: contain;
             border: 2px solid var(--accent);
             background: #0b1329;
@@ -343,7 +341,7 @@
 </head>
 <body>
 
-<!-- Login-Overlay mit neuem Aktualisieren-Button -->
+<!-- Login-Overlay -->
 <div class="login-overlay" id="loginOverlay">
     <div class="login-box">
         <h2>TV Kapellen 1919 e.V.</h2>
@@ -433,6 +431,12 @@
                 <option value="2">2. Mannschaft</option>
                 <option value="3">3. Mannschaft</option>
                 <option value="4">4. Mannschaft</option>
+            </select>
+
+            <label>Spieltag:</label>
+            <select id="matchdayFilter" onchange="renderTable()">
+                <option value="ALL">Alle Spieltage</option>
+                <!-- Wird dynamisch per JS befüllt -->
             </select>
 
             <label>Sortieren nach:</label>
@@ -671,6 +675,7 @@
             einzelData = await resEinzel.json();
             doppelData = await resDoppel.json();
             populateDatalist();
+            populateMatchdayFilter();
         } catch (e) {
             console.error("Fehler beim Laden:", e);
         }
@@ -720,10 +725,51 @@
         });
     }
 
+    function populateMatchdayFilter() {
+        const matchdaySelect = document.getElementById("matchdayFilter");
+        if (!matchdaySelect) return;
+        
+        // Aktuelle Auswahl merken, falls vorhanden
+        const currentVal = matchdaySelect.value;
+        matchdaySelect.innerHTML = '<option value="ALL">Alle Spieltage</option>';
+
+        // Sammle alle eindeutigen Spieltage aus den Spieler- bzw. Paardaten (falls im Backend vorhanden)
+        // Unterstützt gängige Property-Namen wie matchday, spieltag oder array von spieltag-Objekten
+        let matchdaySet = new Set();
+        let dataset = currentMode === "einzel" ? einzelData : doppelData;
+
+        dataset.forEach(item => {
+            if (item.matchdays && Array.isArray(item.matchdays)) {
+                item.matchdays.forEach(m => matchdaySet.add(m));
+            } else if (item.matchday) {
+                matchdaySet.add(item.matchday);
+            }
+        });
+
+        // Falls die Daten direkt Spieltage liefern, sortieren und hinzufügen
+        let sortedMatchdays = Array.from(matchdaySet).sort((a, b) => a - b);
+        if (sortedMatchdays.length === 0) {
+            // Fallback: Beispielhaft Spieltag 1 bis 18 generieren, falls das Backend die Spieltage noch nicht direkt liefert
+            for (let i = 1; i <= 18; i++) {
+                sortedMatchdays.push(i);
+            }
+        }
+
+        sortedMatchdays.forEach(md => {
+            const opt = document.createElement("option");
+            opt.value = md;
+            opt.textContent = `Spieltag ${md}`;
+            matchdaySelect.appendChild(opt);
+        });
+
+        if (currentVal) matchdaySelect.value = currentVal;
+    }
+
     function switchTab(mode) {
         currentMode = mode;
         document.getElementById("tabEinzel").className = `tab-btn ${mode === 'einzel' ? 'active' : ''}`;
         document.getElementById("tabDoppel").className = `tab-btn ${mode === 'doppel' ? 'active' : ''}`;
+        populateMatchdayFilter();
         calculateKPIs();
         renderTable();
         renderPersonalBanner();
@@ -854,6 +900,7 @@
 
     function renderTable() {
         const teamFilter = document.getElementById('teamFilter').value;
+        const matchdayFilter = document.getElementById('matchdayFilter').value;
         const sortSelect = document.getElementById('sortSelect').value;
         const searchInput = document.getElementById('searchInput').value.toLowerCase();
         
@@ -884,9 +931,21 @@
 
         let filtered = dataset.filter(item => {
             const matchesTeam = (teamFilter === 'ALL' || item.team.toString() === teamFilter);
+            
+            // Filtert nach Spieltag, sofern im Datensatz hinterlegt (z.B. item.matchday oder item.matchdays Array)
+            let matchesMatchday = true;
+            if (matchdayFilter !== 'ALL') {
+                const targetMd = parseInt(matchdayFilter);
+                if (item.matchdays && Array.isArray(item.matchdays)) {
+                    matchesMatchday = item.matchdays.includes(targetMd);
+                } else if (item.matchday) {
+                    matchesMatchday = parseInt(item.matchday) === targetMd;
+                }
+            }
+
             const nameToSearch = currentMode === "einzel" ? item.name : item.pairName;
             const matchesSearch = nameToSearch.toLowerCase().includes(searchInput);
-            return matchesTeam && matchesSearch;
+            return matchesTeam && matchesMatchday && matchesSearch;
         });
 
         filtered.sort((a, b) => {
