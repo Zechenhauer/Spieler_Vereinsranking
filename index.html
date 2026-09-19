@@ -784,7 +784,6 @@
                 dartsList = m.dartsStr.split(",").map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
             }
 
-            // Getrennte Erfassung für Einzel und Doppel bei gewonnenen Spielen
             if (!isDoppel) {
                 if (isWin && m.avg > maxEinzelObj.val) {
                     let pName = m.spieler.trim();
@@ -1069,7 +1068,6 @@
             setKpiPlayerGroup('kpiTopShortLegPlayer', [], 'Kein Short Leg');
         }
 
-        // Trennung für Höchstes gespieltes AVG (Einzel vs. Doppel)
         const activeAvgObj = currentMode === "einzel" ? globalMaxEinzelAvg : globalMaxDoppelAvg;
         if (activeAvgObj.val > 0) {
             document.getElementById('kpiTopAvg').textContent = activeAvgObj.val.toFixed(2);
@@ -1106,6 +1104,9 @@
         if (rank === 2) rankClass += " rank-2";
         if (rank === 3) rankClass += " rank-3";
 
+        // Wieder als saubere, gerundete ganze Zahl ohne Komma
+        const dartsPerLegFormatted = item.dartsPerLeg ? Math.round(item.dartsPerLeg) : '-';
+
         return `
             <td class="${rankClass}">${rank}</td>
             <td class="player-cell">${name} <span class="team-badge badge-${item.team}">TVK ${item.team}</span></td>
@@ -1114,7 +1115,7 @@
             <td style="color:var(--accent-gold); font-weight:bold;">${winRate}%</td>
             <td>${item.legsWon} : ${item.legsLost}</td>
             <td>${legDiffFormatted}</td>
-            <td><b>${item.dartsPerLeg ? Math.round(item.dartsPerLeg) : '-'}</b></td>
+            <td><b>${dartsPerLegFormatted}</b></td>
             <td><b>${item.avg ? item.avg.toFixed(2) : '0.00'}</b></td>
             <td>${h180}</td>
             <td>${hf}</td>
@@ -1278,7 +1279,10 @@
         document.getElementById('mHighFinish').textContent = p.highFinish || '-';
         document.getElementById('m180s').textContent = p.h180 || 0;
         document.getElementById('mBestShortLeg').textContent = p.shortLeg ? `${p.shortLeg} Darts` : '-';
-        document.getElementById('mDartsLeg').textContent = p.dartsPerLeg ? `${Math.round(p.dartsPerLeg)}` : '-';
+        
+        // Auch im Modal als ganze Zahl gerundet
+        document.getElementById('mDartsLeg').textContent = p.dartsPerLeg ? Math.round(p.dartsPerLeg) : '-';
+        
         document.getElementById('mShortLegs').textContent = p.shortLegCount || 0;
 
         document.getElementById('m60').textContent = p.c60 || 0;
