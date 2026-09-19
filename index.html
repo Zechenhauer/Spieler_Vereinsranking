@@ -785,14 +785,13 @@
             }
 
             if (!isDoppel) {
+                let pName = m.spieler ? m.spieler.trim() : "";
+                if (!pName) return;
+
                 if (isWin && m.avg > maxEinzelObj.val) {
-                    let pName = m.spieler.trim();
                     let trueTeam = PLAYER_TEAM_MAP[pName] || m.tableTeamNum;
                     maxEinzelObj = { val: m.avg, name: pName, team: trueTeam };
                 }
-
-                let pName = m.spieler.trim();
-                if (!pName) return;
 
                 let trueTeam = PLAYER_TEAM_MAP[pName] || m.tableTeamNum;
 
@@ -822,7 +821,7 @@
                     if (d <= 18) p.shortLegsList.push(d);
                 });
 
-                if (isWin && legsWon > 0 && dartsList.length > 0) {
+                if (legsWon > 0 && dartsList.length > 0) {
                     let legsToCount = Math.min(legsWon, dartsList.length);
                     for (let i = 0; i < legsToCount; i++) {
                         let dartVal = parseInt(dartsList[i]);
@@ -835,7 +834,7 @@
                 p.matchLog.push({ gegner: m.gegnerTeam, ergebnis: m.ergebnis, avg: m.avg, win: isWin });
 
             } else {
-                let rawPairName = m.spieler.trim();
+                let rawPairName = m.spieler ? m.spieler.trim() : "";
                 if (!rawPairName) return;
 
                 let pairParts = rawPairName.split('/').map(s => s.trim());
@@ -905,7 +904,7 @@
                     if (dartVal <= 18) d.shortLegsList.push(dartVal);
                 });
 
-                if (isWin && legsWon > 0 && dartsList.length > 0) {
+                if (legsWon > 0 && dartsList.length > 0) {
                     let legsToCount = Math.min(legsWon, dartsList.length);
                     for (let i = 0; i < legsToCount; i++) {
                         let dartVal = parseInt(dartsList[i]);
