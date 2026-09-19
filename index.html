@@ -1104,7 +1104,6 @@
         if (rank === 2) rankClass += " rank-2";
         if (rank === 3) rankClass += " rank-3";
 
-        // Wieder als saubere, gerundete ganze Zahl ohne Komma
         const dartsPerLegFormatted = item.dartsPerLeg ? Math.round(item.dartsPerLeg) : '-';
 
         return `
@@ -1279,10 +1278,7 @@
         document.getElementById('mHighFinish').textContent = p.highFinish || '-';
         document.getElementById('m180s').textContent = p.h180 || 0;
         document.getElementById('mBestShortLeg').textContent = p.shortLeg ? `${p.shortLeg} Darts` : '-';
-        
-        // Auch im Modal als ganze Zahl gerundet
         document.getElementById('mDartsLeg').textContent = p.dartsPerLeg ? Math.round(p.dartsPerLeg) : '-';
-        
         document.getElementById('mShortLegs').textContent = p.shortLegCount || 0;
 
         document.getElementById('m60').textContent = p.c60 || 0;
