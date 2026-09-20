@@ -301,6 +301,19 @@
         .badge-3 { background-color: var(--team3-bg); color: #000000; border: none; }
         .badge-4 { background-color: var(--team4-bg); color: #000000; border: none; }
 
+        .aushilfe-badge {
+            display: inline-block;
+            font-size: 0.68rem;
+            background: rgba(234, 179, 8, 0.15);
+            color: var(--accent-gold);
+            border: 1px dashed var(--accent-gold);
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 6px;
+            font-weight: 700;
+            vertical-align: middle;
+        }
+
         .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 15px; }
         .modal-content { background: #0c1427; border: 2px solid var(--accent-gold); border-radius: 12px; width: 100%; max-width: 650px; padding: 20px; position: relative; max-height: 90vh; overflow-y: auto; color: #fff; }
         .close-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; }
@@ -788,23 +801,34 @@
                 let pName = m.spieler ? m.spieler.trim() : "";
                 if (!pName) return;
 
+                let baseTeam = PLAYER_TEAM_MAP[pName] || m.tableTeamNum;
+                let matchTeam = m.tableTeamNum;
+
                 if (isWin && m.avg > maxEinzelObj.val) {
-                    let trueTeam = PLAYER_TEAM_MAP[pName] || m.tableTeamNum;
-                    maxEinzelObj = { val: m.avg, name: pName, team: trueTeam };
+                    maxEinzelObj = { val: m.avg, name: pName, team: baseTeam };
                 }
 
-                let trueTeam = PLAYER_TEAM_MAP[pName] || m.tableTeamNum;
+                let mapKey = pName;
 
-                if (!einzelMap[pName]) {
-                    einzelMap[pName] = {
+                if (!einzelMap[mapKey]) {
+                    einzelMap[mapKey] = {
                         id: 'e_' + Math.random().toString(36).substr(2, 9),
-                        name: pName, team: trueTeam, matches: 0, wins: 0, losses: 0, legsWon: 0, legsLost: 0,
+                        name: pName, 
+                        team: baseTeam, 
+                        matches: 0, wins: 0, losses: 0, legsWon: 0, legsLost: 0,
                         avgs: [], h180: 0, highFinish: 0, shortLegsList: [], totalDartsWonLegs: 0,
-                        c60: 0, c80: 0, c100: 0, c140: 0, matchLog: []
+                        c60: 0, c80: 0, c100: 0, c140: 0, matchLog: [],
+                        hasSubbed: false // Marker für Aushilfseinsatz
                     };
                 }
 
-                let p = einzelMap[pName];
+                let p = einzelMap[mapKey];
+                
+                // Prüfen, ob das Match in einer fremden Mannschaft stattfand
+                if (matchTeam !== baseTeam) {
+                    p.hasSubbed = true;
+                }
+
                 p.matches++;
                 if (isWin) p.wins++;
                 if (isLoss) p.losses++;
@@ -831,7 +855,7 @@
                     }
                 }
 
-                p.matchLog.push({ gegner: m.gegnerTeam, ergebnis: m.ergebnis, avg: m.avg, win: isWin });
+                p.matchLog.push({ gegner: m.gegnerTeam, ergebnis: m.ergebnis, avg: m.avg, win: isWin, matchTeam: matchTeam });
 
             } else {
                 let rawPairName = m.spieler ? m.spieler.trim() : "";
@@ -843,6 +867,7 @@
 
                 let firstPlayer = pairParts[0];
                 let trueTeam = PLAYER_TEAM_MAP[firstPlayer] || m.tableTeamNum;
+                let matchTeam = m.tableTeamNum;
 
                 if (isWin && m.avg > maxDoppelObj.val) {
                     maxDoppelObj = { val: m.avg, name: pairName, team: trueTeam };
@@ -851,15 +876,18 @@
                 if (!doppelMap[pairName]) {
                     doppelMap[pairName] = {
                         id: 'd_' + Math.random().toString(36).substr(2, 9),
-                        pairName: pairName, team: trueTeam, matches: 0, wins: 0, losses: 0, legsWon: 0, legsLost: 0,
+                        pairName: pairName, team: trueTeam, matchTeam: matchTeam, matches: 0, wins: 0, losses: 0, legsWon: 0, legsLost: 0,
                         avgs: [], h180_total: 0, h180_player: "", highFinish_total: 0, highFinish_player: "", shortLegsList: [], totalDartsWonLegs: 0,
                         c60: 0, c80: 0, c100: 0, c140: 0,
                         opponentTeam: m.gegnerTeam, lastMatchScore: m.ergebnis, lastMatchDarts: dartsList,
-                        lastMatch180Detail: m.s180 > 0 ? `${m.s180}x` : '-', lastMatchHFDetail: m.hf > 0 ? `${m.hf}` : '-'
+                        lastMatch180Detail: m.s180 > 0 ? `${m.s180}x` : '-', lastMatchHFDetail: m.hf > 0 ? `${m.hf}` : '-',
+                        hasSubbed: matchTeam !== trueTeam
                     };
                 }
 
                 let d = doppelMap[pairName];
+                if (matchTeam !== trueTeam) d.hasSubbed = true;
+
                 d.matches++;
                 if (isWin) d.wins++;
                 if (isLoss) d.losses++;
@@ -929,8 +957,22 @@
             let bestG = sortedLogs.length > 0 ? `${sortedLogs[0].gegner} (Avg: ${sortedLogs[0].avg.toFixed(2)}, ${sortedLogs[0].ergebnis})` : "Noch keine Spiele vorhanden.";
             let worstG = sortedLogs.length > 0 ? `${sortedLogs[sortedLogs.length - 1].gegner} (Avg: ${sortedLogs[sortedLogs.length - 1].avg.toFixed(2)}, ${sortedLogs[sortedLogs.length - 1].ergebnis})` : "Noch keine Spiele vorhanden.";
 
+            let teamCounts = {};
+            p.matchLog.forEach(log => {
+                teamCounts[log.matchTeam] = (teamCounts[log.matchTeam] || 0) + 1;
+            });
+            let primaryMatchTeam = p.team;
+            let maxCount = -1;
+            for (let t in teamCounts) {
+                if (teamCounts[t] > maxCount) {
+                    maxCount = teamCounts[t];
+                    primaryMatchTeam = t;
+                }
+            }
+
             return {
                 ...p,
+                filterTeam: primaryMatchTeam,
                 avg: avgVal,
                 shortLeg: minSL,
                 shortLegCount: p.shortLegsList.length,
@@ -948,6 +990,7 @@
 
             return {
                 ...d,
+                filterTeam: d.matchTeam,
                 avg: avgVal,
                 shortLeg: minSL,
                 shortLegCount: d.shortLegsList.length,
@@ -1113,9 +1156,12 @@
 
         const dartsPerLegFormatted = item.dartsPerLeg ? Math.round(item.dartsPerLeg) : '-';
 
+        // Aushilfe-Badge anzeigen, wenn der Spieler in einer anderen Mannschaft ausgeholfen hat
+        let subBadgeHtml = item.hasSubbed ? `<span class="aushilfe-badge" title="Hat in dieser Mannschaft ausgeholfen">⚡ Aushilfe</span>` : '';
+
         return `
             <td class="${rankClass}">${rank}</td>
-            <td class="player-cell">${name} <span class="team-badge badge-${item.team}">TVK ${item.team}</span></td>
+            <td class="player-cell">${name} <span class="team-badge badge-${item.team}">TVK ${item.team}</span>${subBadgeHtml}</td>
             <td>${item.matches}</td>
             <td><span style="color:var(--success); font-weight:bold;">${item.wins}</span> : <span style="color:var(--danger); font-weight:bold;">${item.losses}</span></td>
             <td style="color:var(--accent-gold); font-weight:bold;">${winRate}%</td>
@@ -1160,7 +1206,7 @@
             </tr>`;
 
         let filtered = dataset.filter(item => {
-            const matchesTeam = (teamFilter === 'ALL' || item.team.toString() === teamFilter);
+            const matchesTeam = (teamFilter === 'ALL' || item.filterTeam.toString() === teamFilter);
             const nameToSearch = currentMode === "einzel" ? item.name : item.pairName;
             const matchesSearch = nameToSearch.toLowerCase().includes(searchInput);
             return matchesTeam && matchesSearch;
@@ -1263,7 +1309,7 @@
         if(!p) return;
 
         document.getElementById('modalPlayerName').textContent = p.name;
-        document.getElementById('modalTeamName').textContent = `Saison 2026/2027 • Stammteam: TVK ${p.team}`;
+        document.getElementById('modalTeamName').textContent = `Saison 2026/2027 • Stammteam: TVK ${p.team}` + (p.hasSubbed ? " (Hat in anderer Mannschaft ausgeholfen)" : "");
         document.getElementById('modalSectionHeader').textContent = `TVK ${p.team} — Leistungsdaten`;
 
         const winRate = p.matches > 0 ? Math.round((p.wins / p.matches) * 100) : 0;
@@ -1301,7 +1347,7 @@
         if(!d) return;
 
         document.getElementById('dmTitle').textContent = `${d.pairName.toUpperCase()} VS. ${d.opponentTeam ? d.opponentTeam.toUpperCase() : 'GEGNER'}`;
-        document.getElementById('dmSub').textContent = `TVK ${d.team}`;
+        document.getElementById('dmSub').textContent = `TVK ${d.team}` + (d.hasSubbed ? " (Aushilfseinsatz)" : "");
         document.getElementById('dmScore').textContent = d.lastMatchScore || `${d.legsWon}:${d.legsLost}`;
 
         document.getElementById('dmPairName').textContent = d.pairName;
