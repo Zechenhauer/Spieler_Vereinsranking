@@ -314,6 +314,13 @@
             vertical-align: middle;
         }
 
+        .sub-player-highlight {
+            background: rgba(234, 179, 8, 0.12);
+            border: 1px solid rgba(234, 179, 8, 0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
         .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 15px; }
         .modal-content { background: #0c1427; border: 2px solid var(--accent-gold); border-radius: 12px; width: 100%; max-width: 650px; padding: 20px; position: relative; max-height: 90vh; overflow-y: auto; color: #fff; }
         .close-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; }
@@ -785,7 +792,6 @@
             let spielerStr = m.spieler ? m.spieler.trim() : "";
             if (!spielerStr) return;
 
-            // STRIKTE TRENNUNG: Doppel liegt vor, wenn Block "doppel" enthält oder "/" im Namen steht
             let isDoppel = blockLower.includes("doppel") || spielerStr.includes("/");
 
             let legsWon = 0, legsLost = 0, isWin = false, isLoss = false;
@@ -802,17 +808,11 @@
                 dartsList = m.dartsStr.split(",").map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
             }
 
-            let matchTeam = m.tableTeamNum; // Mannschaft, in der das Spiel stattgefunden hat
+            let matchTeam = m.tableTeamNum;
 
             if (!isDoppel) {
-                // ==========================================
-                // EINZEL-LOGIK (Inkl. Aushilfen in fremden Mannschaften)
-                // ==========================================
                 let pName = spielerStr;
                 let baseTeam = PLAYER_TEAM_MAP[pName] || matchTeam;
-
-                // WICHTIG: Wenn es ein Aushilfseinsatz ist (matchTeam !== baseTeam), 
-                // soll es in der Rangliste der *ausgeholfenen* Mannschaft (matchTeam) gewertet werden!
                 let assignedTeam = matchTeam; 
                 let isSubbed = (matchTeam !== baseTeam);
 
@@ -820,16 +820,13 @@
                     maxEinzelObj = { val: m.avg, name: pName, team: assignedTeam };
                 }
 
-                // Wir erstellen einen eindeutigen Schlüssel pro Spieler pro Mannschaft, 
-                // falls ein Spieler in zwei Teams auftaucht, oder fassen es zusammen. 
-                // Hier behalten wir die Spieler-Ansicht, weisen ihm aber das Team zu, in dem er gewertet wird.
                 let mapKey = `${pName}_team_${assignedTeam}`;
 
                 if (!einzelMap[mapKey]) {
                     einzelMap[mapKey] = {
                         id: 'e_' + Math.random().toString(36).substr(2, 9),
                         name: pName, 
-                        team: assignedTeam, // Das Team, für das dieses spezifische Spiel gewertet wird
+                        team: assignedTeam, 
                         baseTeam: baseTeam,
                         matches: 0, wins: 0, losses: 0, legsWon: 0, legsLost: 0,
                         avgs: [], h180: 0, highFinish: 0, shortLegsList: [], totalDartsWonLegs: 0,
@@ -870,17 +867,16 @@
                 p.matchLog.push({ gegner: m.gegnerTeam, ergebnis: m.ergebnis, avg: m.avg, win: isWin, matchTeam: matchTeam });
 
             } else {
-                // ==========================================
-                // DOPPEL-LOGIK
-                // ==========================================
                 let pairParts = spielerStr.split('/').map(s => s.trim());
                 pairParts.sort();
                 let pairName = pairParts.join(" / ");
 
-                let firstPlayer = pairParts[0];
-                let trueTeam = PLAYER_TEAM_MAP[firstPlayer] || matchTeam;
-                let isSubbed = (matchTeam !== trueTeam);
                 let assignedTeam = matchTeam;
+                
+                let isSubbed = pairParts.some(player => {
+                    let playerTeam = PLAYER_TEAM_MAP[player];
+                    return playerTeam && playerTeam !== matchTeam;
+                });
 
                 if (isWin && m.avg > maxDoppelObj.val) {
                     maxDoppelObj = { val: m.avg, name: pairName, team: assignedTeam };
@@ -891,7 +887,8 @@
                 if (!doppelMap[mapKey]) {
                     doppelMap[mapKey] = {
                         id: 'd_' + Math.random().toString(36).substr(2, 9),
-                        pairName: pairName, team: assignedTeam, baseTeam: trueTeam, matchTeam: matchTeam, 
+                        pairName: pairName, team: assignedTeam, matchTeam: matchTeam, 
+                        players: pairParts,
                         matches: 0, wins: 0, losses: 0, legsWon: 0, legsLost: 0,
                         avgs: [], h180_total: 0, h180_player: "", highFinish_total: 0, highFinish_player: "", shortLegsList: [], totalDartsWonLegs: 0,
                         c60: 0, c80: 0, c100: 0, c140: 0,
@@ -969,7 +966,7 @@
             let minSL = p.shortLegsList.length > 0 ? p.shortLegsList[0] : null;
             let dartsPerLeg = p.legsWon > 0 && p.totalDartsWonLegs > 0 ? (p.totalDartsWonLegs / p.legsWon) : null;
 
-            let sortedLogs = [...p.matchLog].filter(x => x.avg > 0).sort((a, b) => b.avg - a.avg);
+            let sortedLogs = (p.matchLog || []).filter(x => x.avg > 0).sort((a, b) => b.avg - a.avg);
             let bestG = sortedLogs.length > 0 ? `${sortedLogs[0].gegner} (Avg: ${sortedLogs[0].avg.toFixed(2)}, ${sortedLogs[0].ergebnis})` : "Noch keine Spiele vorhanden.";
             let worstG = sortedLogs.length > 0 ? `${sortedLogs[sortedLogs.length - 1].gegner} (Avg: ${sortedLogs[sortedLogs.length - 1].avg.toFixed(2)}, ${sortedLogs[sortedLogs.length - 1].ergebnis})` : "Noch keine Spiele vorhanden.";
 
@@ -1144,7 +1141,24 @@
     }
 
     function createRowHTML(item, rank) {
-        const name = currentMode === "einzel" ? item.name : item.pairName;
+        let nameHTML = "";
+        if (currentMode === "einzel") {
+            let subBadge = item.hasSubbed ? `<span class="aushilfe-badge" title="Aushilfseinsatz">⚡ Aushilfe</span>` : '';
+            let nameClass = item.hasSubbed ? `sub-player-highlight` : '';
+            nameHTML = `<span class="${nameClass}">${item.name}</span>${subBadge}`;
+        } else {
+            // Doppel: Jeden Spieler einzeln prüfen und ggf. farblich unterlegen + Badge vergeben
+            let formattedPlayers = item.players.map(player => {
+                let pTeam = PLAYER_TEAM_MAP[player];
+                let isSub = pTeam && pTeam !== item.team;
+                if (isSub) {
+                    return `<span class="sub-player-highlight">${player}</span> <span class="aushilfe-badge" title="Aushilfe aus Team ${pTeam}">⚡ Aushilfe</span>`;
+                }
+                return player;
+            });
+            nameHTML = formattedPlayers.join(" / ");
+        }
+
         const winRate = item.matches > 0 ? Math.round((item.wins / item.matches) * 100) : 0;
         const legDiff = item.legsWon - item.legsLost;
         const legDiffFormatted = legDiff > 0 ? `+${legDiff}` : legDiff;
@@ -1159,11 +1173,9 @@
 
         const dartsPerLegFormatted = item.dartsPerLeg ? Math.round(item.dartsPerLeg) : '-';
 
-        let subBadgeHtml = item.hasSubbed ? `<span class="aushilfe-badge" title="Aushilfseinsatz in dieser Mannschaft">⚡ Aushilfe</span>` : '';
-
         return `
             <td class="${rankClass}">${rank}</td>
-            <td class="player-cell">${name} <span class="team-badge badge-${item.team}">TVK ${item.team}</span>${subBadgeHtml}</td>
+            <td class="player-cell">${nameHTML} <span class="team-badge badge-${item.team}">TVK ${item.team}</span></td>
             <td>${item.matches}</td>
             <td><span style="color:var(--success); font-weight:bold;">${item.wins}</span> : <span style="color:var(--danger); font-weight:bold;">${item.losses}</span></td>
             <td style="color:var(--accent-gold); font-weight:bold;">${winRate}%</td>
