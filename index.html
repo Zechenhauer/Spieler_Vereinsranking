@@ -781,7 +781,12 @@
         let maxDoppelObj = { val: 0, name: "-", team: "1" };
 
         allMatches.forEach(m => {
-            let isDoppel = m.block.toLowerCase().includes("doppel") || m.spieler.includes("/");
+            let blockLower = m.block ? m.block.toLowerCase() : "";
+            let spielerStr = m.spieler ? m.spieler.trim() : "";
+            if (!spielerStr) return;
+
+            // STRIKTE TRENNUNG: Ein Doppel liegt vor, wenn der Block "doppel" enthält oder im Spielernamen ein Schrägstrich "/" steht
+            let isDoppel = blockLower.includes("doppel") || spielerStr.includes("/");
 
             let legsWon = 0, legsLost = 0, isWin = false, isLoss = false;
             if (m.ergebnis && m.ergebnis.includes(":")) {
@@ -797,12 +802,20 @@
                 dartsList = m.dartsStr.split(",").map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
             }
 
-            if (!isDoppel) {
-                let pName = m.spieler ? m.spieler.trim() : "";
-                if (!pName) return;
+            let matchTeam = m.tableTeamNum; // In welcher Mannschaft fand dieses Match statt?
 
-                let baseTeam = PLAYER_TEAM_MAP[pName] || m.tableTeamNum;
-                let matchTeam = m.tableTeamNum;
+            if (!isDoppel) {
+                // ==========================================
+                // EINZEL-LOGIK
+                // ==========================================
+                let pName = spielerStr;
+                let baseTeam = PLAYER_TEAM_MAP[pName] || matchTeam;
+
+                // WICHTIG: Nur Spiele werten, die für das eigene Stammteam gemacht wurden!
+                // Aushilfseinsätze (matchTeam !== baseTeam) werden für das Stammteam ignoriert.
+                if (matchTeam !== baseTeam) {
+                    return; 
+                }
 
                 if (isWin && m.avg > maxEinzelObj.val) {
                     maxEinzelObj = { val: m.avg, name: pName, team: baseTeam };
@@ -818,16 +831,11 @@
                         matches: 0, wins: 0, losses: 0, legsWon: 0, legsLost: 0,
                         avgs: [], h180: 0, highFinish: 0, shortLegsList: [], totalDartsWonLegs: 0,
                         c60: 0, c80: 0, c100: 0, c140: 0, matchLog: [],
-                        hasSubbed: false // Marker für Aushilfseinsatz
+                        hasSubbed: false
                     };
                 }
 
                 let p = einzelMap[mapKey];
-                
-                // Prüfen, ob das Match in einer fremden Mannschaft stattfand
-                if (matchTeam !== baseTeam) {
-                    p.hasSubbed = true;
-                }
 
                 p.matches++;
                 if (isWin) p.wins++;
@@ -858,16 +866,15 @@
                 p.matchLog.push({ gegner: m.gegnerTeam, ergebnis: m.ergebnis, avg: m.avg, win: isWin, matchTeam: matchTeam });
 
             } else {
-                let rawPairName = m.spieler ? m.spieler.trim() : "";
-                if (!rawPairName) return;
-
-                let pairParts = rawPairName.split('/').map(s => s.trim());
+                // ==========================================
+                // DOPPEL-LOGIK (Hier dürfen Aushilfen und Doppel auftauchen)
+                // ==========================================
+                let pairParts = spielerStr.split('/').map(s => s.trim());
                 pairParts.sort();
                 let pairName = pairParts.join(" / ");
 
                 let firstPlayer = pairParts[0];
-                let trueTeam = PLAYER_TEAM_MAP[firstPlayer] || m.tableTeamNum;
-                let matchTeam = m.tableTeamNum;
+                let trueTeam = PLAYER_TEAM_MAP[firstPlayer] || matchTeam;
 
                 if (isWin && m.avg > maxDoppelObj.val) {
                     maxDoppelObj = { val: m.avg, name: pairName, team: trueTeam };
@@ -957,22 +964,9 @@
             let bestG = sortedLogs.length > 0 ? `${sortedLogs[0].gegner} (Avg: ${sortedLogs[0].avg.toFixed(2)}, ${sortedLogs[0].ergebnis})` : "Noch keine Spiele vorhanden.";
             let worstG = sortedLogs.length > 0 ? `${sortedLogs[sortedLogs.length - 1].gegner} (Avg: ${sortedLogs[sortedLogs.length - 1].avg.toFixed(2)}, ${sortedLogs[sortedLogs.length - 1].ergebnis})` : "Noch keine Spiele vorhanden.";
 
-            let teamCounts = {};
-            p.matchLog.forEach(log => {
-                teamCounts[log.matchTeam] = (teamCounts[log.matchTeam] || 0) + 1;
-            });
-            let primaryMatchTeam = p.team;
-            let maxCount = -1;
-            for (let t in teamCounts) {
-                if (teamCounts[t] > maxCount) {
-                    maxCount = teamCounts[t];
-                    primaryMatchTeam = t;
-                }
-            }
-
             return {
                 ...p,
-                filterTeam: primaryMatchTeam,
+                filterTeam: p.team,
                 avg: avgVal,
                 shortLeg: minSL,
                 shortLegCount: p.shortLegsList.length,
@@ -990,7 +984,7 @@
 
             return {
                 ...d,
-                filterTeam: d.matchTeam,
+                filterTeam: d.team, // Gefiltert nach Stammteam, damit es in der jeweiligen Mannschaft auftaucht
                 avg: avgVal,
                 shortLeg: minSL,
                 shortLegCount: d.shortLegsList.length,
@@ -1156,8 +1150,7 @@
 
         const dartsPerLegFormatted = item.dartsPerLeg ? Math.round(item.dartsPerLeg) : '-';
 
-        // Aushilfe-Badge anzeigen, wenn der Spieler in einer anderen Mannschaft ausgeholfen hat
-        let subBadgeHtml = item.hasSubbed ? `<span class="aushilfe-badge" title="Hat in dieser Mannschaft ausgeholfen">⚡ Aushilfe</span>` : '';
+        let subBadgeHtml = item.hasSubbed ? `<span class="aushilfe-badge" title="Hat ausgeholfen">⚡ Aushilfe</span>` : '';
 
         return `
             <td class="${rankClass}">${rank}</td>
@@ -1309,7 +1302,7 @@
         if(!p) return;
 
         document.getElementById('modalPlayerName').textContent = p.name;
-        document.getElementById('modalTeamName').textContent = `Saison 2026/2027 • Stammteam: TVK ${p.team}` + (p.hasSubbed ? " (Hat in anderer Mannschaft ausgeholfen)" : "");
+        document.getElementById('modalTeamName').textContent = `Saison 2026/2027 • Stammteam: TVK ${p.team}`;
         document.getElementById('modalSectionHeader').textContent = `TVK ${p.team} — Leistungsdaten`;
 
         const winRate = p.matches > 0 ? Math.round((p.wins / p.matches) * 100) : 0;
