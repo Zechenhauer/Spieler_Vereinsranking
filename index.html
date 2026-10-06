@@ -345,6 +345,33 @@
         .modal-grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
         .modal-stat-box { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 10px; text-align: center; }
 
+        /* Footer / Besucher-Zähler */
+        .footer-action-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid var(--card-border);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .visitor-counter-box {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .visitor-counter-box span {
+            color: #ffffff;
+            font-weight: bold;
+        }
+
         @media (max-width: 600px) {
             .modal-grid-5, .modal-grid-4 { grid-template-columns: repeat(2, 1fr); }
             .title-row { gap: 10px; }
@@ -476,6 +503,14 @@
                 <tr><td colspan="12" style="text-align:center; padding: 20px;">Lade Daten aus Supabase...</td></tr>
             </tbody>
         </table>
+    </div>
+
+    <!-- FOOTER MIT BESUCHER-ZÄHLER -->
+    <div class="footer-action-row">
+        <div class="visitor-counter-box" title="Dauerhafte App-Aufrufe">
+            👁️ Aufrufe: <span id="visitorCountDisplay">-</span>
+        </div>
+        <div style="font-size: 0.75rem; color: var(--text-muted);">TV Kapellen 1919 e.V. • Dart-Abteilung</div>
     </div>
 </div>
 
@@ -657,6 +692,7 @@
     let globalMaxDoppelAvg = { val: 0, name: "-", team: "1" };
     let loggedInPlayerName = "";
     let currentUserIsAdmin = false;
+    let visitorCount = 0;
 
     function getUsers() {
         const stored = localStorage.getItem("tvk_registered_users");
@@ -723,6 +759,31 @@
         initRanking();
     }
 
+    async function fetchVisitorCount() {
+        try {
+            let { data, error } = await supabaseClient
+                .from('oberliga_table')
+                .select('payload')
+                .eq('id', 'tvk_ranking_visitors')
+                .single();
+
+            if (data && data.payload && typeof data.payload.visitorCount === 'number') {
+                visitorCount = data.payload.visitorCount;
+            }
+            
+            visitorCount++;
+            
+            await supabaseClient
+                .from('oberliga_table')
+                .upsert({ id: 'tvk_ranking_visitors', payload: { visitorCount: visitorCount } });
+
+            document.getElementById('visitorCountDisplay').textContent = visitorCount;
+        } catch (e) {
+            console.log('Besucherzähler Fehler:', e);
+            document.getElementById('visitorCountDisplay').textContent = '-';
+        }
+    }
+
     async function fetchSupabaseMatches() {
         const teamConfigs = [
             { teamNum: "1", tableSpieltage: "spieltage_t1", tableMatches: "matches_t1", tableScoring: "scoring_stats_t1" },
@@ -776,6 +837,7 @@
     }
 
     async function initRanking() {
+        fetchVisitorCount();
         let matches = await fetchSupabaseMatches();
         processRankingsFromMatches(matches);
 
@@ -1151,7 +1213,6 @@
             let nameClass = item.hasSubbed ? `sub-player-highlight` : '';
             nameHTML = `<span class="${nameClass}">${item.name}</span>${subBadge}`;
         } else {
-            // Doppel: Jeden Spieler einzeln prüfen und ggf. farblich unterlegen + Badge vergeben
             let formattedPlayers = item.players.map(player => {
                 let pTeam = PLAYER_TEAM_MAP[player];
                 let isSub = pTeam && pTeam !== item.team;
