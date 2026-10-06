@@ -345,7 +345,6 @@
         .modal-grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
         .modal-stat-box { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 10px; text-align: center; }
 
-        /* Footer / Besucher-Zähler */
         .footer-action-row {
             display: flex;
             justify-content: space-between;
@@ -800,9 +799,13 @@
                     .from(cfg.tableSpieltage)
                     .select(`*, ${cfg.tableMatches} (*, ${cfg.tableScoring} (*))`);
 
-                if (error) throw error;
+                if (error) {
+                    console.error(`Supabase Fehler bei Team ${cfg.teamNum} (${cfg.tableSpieltage}):`, error);
+                    continue;
+                }
 
                 if (data) {
+                    console.log(`Team ${cfg.teamNum} erfolgreich geladen:`, data.length, "Spieltage gefunden.");
                     data.forEach(st => {
                         let matchesList = st[cfg.tableMatches] || [];
                         matchesList.forEach(m => {
@@ -830,7 +833,7 @@
                     });
                 }
             } catch (err) {
-                console.error(`Fehler beim Laden von Supabase (Team ${cfg.teamNum}):`, err);
+                console.error(`Unerwarteter Fehler beim Laden von Team ${cfg.teamNum}:`, err);
             }
         }
         return rawMatches;
