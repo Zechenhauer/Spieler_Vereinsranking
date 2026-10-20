@@ -345,6 +345,22 @@
         .modal-grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
         .modal-stat-box { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 10px; text-align: center; }
 
+        .admin-box {
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px dashed var(--danger);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 20px;
+        }
+        .admin-box-title {
+            font-size: 0.75rem;
+            color: var(--danger);
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
         .footer-action-row {
             display: flex;
             justify-content: space-between;
@@ -442,7 +458,6 @@
     </div>
 
     <div class="kpi-grid">
-        <!-- TOP-FORM KACHEL (SCHÖN AUFGETEILT IN ZWEI ZEILEN) -->
         <div class="kpi-card" style="border-color: var(--success);">
             <div class="kpi-label" style="color: var(--success);">🔥 Top-Form (Letzte 5 Spiele)</div>
             <div>
@@ -570,6 +585,9 @@
             <div class="modal-stat-box"><div class="kpi-label">100+</div><div class="kpi-value" id="m100" style="font-size: 1.1rem; color: white;">0</div></div>
             <div class="modal-stat-box" style="border: 1px solid var(--accent-gold);"><div class="kpi-label" style="color: var(--accent-gold);">140+</div><div class="kpi-value" id="m140" style="font-size: 1.1rem; color: var(--accent-gold);">0</div></div>
         </div>
+
+        <!-- SICHTBARER ADMIN-BEREIN IN DER SPIELERKARTE -->
+        <div id="modalAdminAction"></div>
     </div>
 </div>
 
@@ -698,6 +716,9 @@
     let loggedInPlayerName = "";
     let currentUserIsAdmin = false;
     let visitorCount = 0;
+    
+    // Lokale Ausschluss-Liste für ausgeblendete Spieler (Vereinswechsel etc.)
+    let hiddenPlayers = JSON.parse(localStorage.getItem("tvk_hidden_players") || "[]");
 
     function getUsers() {
         const stored = localStorage.getItem("tvk_registered_users");
@@ -867,6 +888,15 @@
             if (!spielerStr) return;
 
             let isDoppel = blockLower.includes("doppel") || spielerStr.includes("/");
+
+            // Bei Doppel: Prüfen, ob einer der beiden Spieler ausgeblendet ist
+            if (isDoppel) {
+                let pairParts = spielerStr.split('/').map(s => s.trim());
+                if (pairParts.some(p => hiddenPlayers.includes(p))) return;
+            } else {
+                // Bei Einzel: Prüfen, ob der Spieler ausgeblendet ist
+                if (hiddenPlayers.includes(spielerStr)) return;
+            }
 
             let legsWon = 0, legsLost = 0, isWin = false, isLoss = false;
             if (m.ergebnis && m.ergebnis.includes(":")) {
@@ -1198,7 +1228,6 @@
             let topPlayer = candidates[0];
             let diffStr = topPlayer.legDiff > 0 ? `+${topPlayer.legDiff}` : topPlayer.legDiff;
 
-            // SCHÖN AUFGETEILT: Oben Siege, Unten das Leg-Verhältnis
             document.getElementById('kpiTopFormVal').textContent = `${topPlayer.wins} / ${topPlayer.total} Siege`;
             document.getElementById('kpiTopFormLegs').textContent = `Legs: ${topPlayer.legsWon}:${topPlayer.legsLost} (${diffStr})`;
             document.getElementById('kpiTopFormPlayer').innerHTML = `<span class="kpi-sub-highlight badge-${topPlayer.team}">${topPlayer.name} (TVK ${topPlayer.team})</span>`;
@@ -1473,7 +1502,49 @@
         document.getElementById('m100').textContent = p.c100 || 0;
         document.getElementById('m140').textContent = p.c140 || 0;
 
+        // Admin-Bereich einblenden, falls User Admin ist
+        const adminActionDiv = document.getElementById('modalAdminAction');
+        if (currentUserIsAdmin) {
+            let isHidden = hiddenPlayers.includes(p.name);
+            let actionBtnHTML = isHidden 
+                ? `<button onclick="unhidePlayer('${p.name}')" style="background: var(--success); color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 0.85rem;">✓ Spieler wieder einblenden</button>`
+                : `<button onclick="hidePlayer('${p.name}')" style="background: var(--danger); color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 0.85rem;">🗑️ Spieler ausblenden (Vereinswechsel)</button>`;
+
+            let hiddenListItems = hiddenPlayers.length > 0 ? hiddenPlayers.map(hp => `<span style="display:inline-block; background:rgba(255,255,255,0.05); padding:2px 6px; border-radius:4px; margin:2px; font-size:0.75rem;">${hp}</span>`).join(" ") : "Keine";
+
+            adminActionDiv.innerHTML = `
+                <div class="admin-box">
+                    <div class="admin-box-title">⚙️ Admin-Bereich (Ausschluss-Verwaltung)</div>
+                    <div style="margin-bottom: 10px;">${actionBtnHTML}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 6px;">
+                        <b>Aktuell ausgeblendet:</b> ${hiddenListItems}
+                    </div>
+                </div>`;
+        } else {
+            adminActionDiv.innerHTML = '';
+        }
+
         document.getElementById('playerModal').style.display = 'flex';
+    }
+
+    function hidePlayer(playerName) {
+        if (confirm(`Möchtest du "${playerName}" wirklich aus der App ausblenden (wegen Vereinswechsel)?`)) {
+            if (!hiddenPlayers.includes(playerName)) {
+                hiddenPlayers.push(playerName);
+                localStorage.setItem("tvk_hidden_players", JSON.stringify(hiddenPlayers));
+            }
+            closeModalDirect('playerModal');
+            initRanking();
+        }
+    }
+
+    function unhidePlayer(playerName) {
+        if (confirm(`Möchtest du "${playerName}" wieder in der App anzeigen?`)) {
+            hiddenPlayers = hiddenPlayers.filter(name => name !== playerName);
+            localStorage.setItem("tvk_hidden_players", JSON.stringify(hiddenPlayers));
+            closeModalDirect('playerModal');
+            initRanking();
+        }
     }
 
     function openDoppelModal(pairId) {
