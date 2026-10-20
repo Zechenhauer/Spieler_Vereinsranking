@@ -213,10 +213,10 @@
             font-weight: 600;
         }
         .kpi-value { 
-            font-size: 1.25rem; 
+            font-size: 1.15rem; 
             font-weight: bold; 
             color: var(--accent-gold); 
-            margin: 4px 0; 
+            margin: 3px 0; 
         }
         
         .kpi-sub-highlight {
@@ -442,11 +442,16 @@
     </div>
 
     <div class="kpi-grid">
-        <div class="kpi-card">
-            <div class="kpi-label" id="kpiLabel1">Aktive Vereinsspieler</div>
-            <div class="kpi-value" id="kpiTotalPlayers">0</div>
-            <div><span class="kpi-sub-highlight">in 4 Mannschaften</span></div>
+        <!-- TOP-FORM KACHEL (SCHÖN AUFGETEILT IN ZWEI ZEILEN) -->
+        <div class="kpi-card" style="border-color: var(--success);">
+            <div class="kpi-label" style="color: var(--success);">🔥 Top-Form (Letzte 5 Spiele)</div>
+            <div>
+                <div class="kpi-value" id="kpiTopFormVal" style="font-size: 1.15rem; margin-bottom: 2px;">-</div>
+                <div class="kpi-value" id="kpiTopFormLegs" style="font-size: 0.9rem; color: var(--text-muted); font-weight: 600;">Legs: -</div>
+            </div>
+            <div id="kpiTopFormPlayer"><span class="kpi-sub-highlight">Ermittle Bestform...</span></div>
         </div>
+
         <div class="kpi-card">
             <div class="kpi-label">Meiste 180er (Verein)</div>
             <div class="kpi-value" id="kpiTop180">-</div>
@@ -625,7 +630,7 @@
 
 <script>
     const SUPABASE_URL = 'https://lhusylpjnujlqomougmg.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_yXEueWILvAq-Vm2VfTuYyg_BIQeE1KK';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxodXN5bHBqbnVqbHFvbW91Z21nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkwMzA0ODIsImV4cCI6MjEwNDYwNjQ4Mn0.9ugazAA5pEdy9uSaJQWa5BMb7EwSH9d-h5K8ln_PF5A';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const PLAYER_TEAM_MAP = {
@@ -806,7 +811,6 @@
                 }
 
                 if (data) {
-                    console.log(`Team ${cfg.teamNum} erfolgreich geladen:`, data.length, "Spieltage gefunden.");
                     data.forEach(st => {
                         let matchesList = st[cfg.tableMatches] || [];
                         matchesList.forEach(m => {
@@ -934,7 +938,7 @@
                     }
                 }
 
-                p.matchLog.push({ gegner: m.gegnerTeam, ergebnis: m.ergebnis, avg: m.avg, win: isWin, matchTeam: matchTeam });
+                p.matchLog.push({ spieltag: m.spieltag || 0, gegner: m.gegnerTeam, ergebnis: m.ergebnis, avg: m.avg, win: isWin, legsWon: legsWon, legsLost: legsLost });
 
             } else {
                 let pairParts = spielerStr.split('/').map(s => s.trim());
@@ -961,7 +965,7 @@
                         players: pairParts,
                         matches: 0, wins: 0, losses: 0, legsWon: 0, legsLost: 0,
                         avgs: [], h180_total: 0, h180_player: "", highFinish_total: 0, highFinish_player: "", shortLegsList: [], totalDartsWonLegs: 0,
-                        c60: 0, c80: 0, c100: 0, c140: 0,
+                        c60: 0, c80: 0, c100: 0, c140: 0, matchLog: [],
                         opponentTeam: m.gegnerTeam, lastMatchScore: m.ergebnis, lastMatchDarts: dartsList,
                         lastMatch180Detail: m.s180 > 0 ? `${m.s180}x` : '-', lastMatchHFDetail: m.hf > 0 ? `${m.hf}` : '-',
                         hasSubbed: isSubbed
@@ -1024,6 +1028,8 @@
                         }
                     }
                 }
+
+                d.matchLog.push({ spieltag: m.spieltag || 0, gegner: m.gegnerTeam, ergebnis: m.ergebnis, avg: m.avg, win: isWin, legsWon: legsWon, legsLost: legsLost });
             }
         });
 
@@ -1154,8 +1160,53 @@
     function calculateKPIs() {
         const dataset = currentMode === "einzel" ? einzelData : doppelData;
 
-        document.getElementById('kpiLabel1').textContent = currentMode === "einzel" ? "Aktive Vereinsspieler" : "Aktive Doppel-Paare";
-        document.getElementById('kpiTotalPlayers').textContent = dataset.length;
+        let candidates = [];
+
+        dataset.forEach(item => {
+            let logs = item.matchLog || [];
+            if (logs.length > 0) {
+                logs.sort((a, b) => b.spieltag - a.spieltag);
+                let recentLogs = logs.slice(0, 5); // Letzte 5 Spiele
+                let wins = recentLogs.filter(l => l.win).length;
+                let total = recentLogs.length;
+                let avg = recentLogs.reduce((acc, l) => acc + (l.avg || 0), 0) / total;
+                
+                let legsWon = recentLogs.reduce((acc, l) => acc + (l.legsWon || 0), 0);
+                let legsLost = recentLogs.reduce((acc, l) => acc + (l.legsLost || 0), 0);
+                let legDiff = legsWon - legsLost;
+
+                candidates.push({
+                    name: currentMode === "einzel" ? item.name : item.pairName,
+                    team: item.team,
+                    wins: wins,
+                    total: total,
+                    avg: avg,
+                    legDiff: legDiff,
+                    legsWon: legsWon,
+                    legsLost: legsLost
+                });
+            }
+        });
+
+        if (candidates.length > 0) {
+            candidates.sort((a, b) => {
+                if (b.wins !== a.wins) return b.wins - a.wins;
+                if (b.legDiff !== a.legDiff) return b.legDiff - a.legDiff;
+                return b.avg - a.avg;
+            });
+
+            let topPlayer = candidates[0];
+            let diffStr = topPlayer.legDiff > 0 ? `+${topPlayer.legDiff}` : topPlayer.legDiff;
+
+            // SCHÖN AUFGETEILT: Oben Siege, Unten das Leg-Verhältnis
+            document.getElementById('kpiTopFormVal').textContent = `${topPlayer.wins} / ${topPlayer.total} Siege`;
+            document.getElementById('kpiTopFormLegs').textContent = `Legs: ${topPlayer.legsWon}:${topPlayer.legsLost} (${diffStr})`;
+            document.getElementById('kpiTopFormPlayer').innerHTML = `<span class="kpi-sub-highlight badge-${topPlayer.team}">${topPlayer.name} (TVK ${topPlayer.team})</span>`;
+        } else {
+            document.getElementById('kpiTopFormVal').textContent = 'Keine Daten';
+            document.getElementById('kpiTopFormLegs').textContent = 'Legs: -';
+            document.getElementById('kpiTopFormPlayer').innerHTML = `<span class="kpi-sub-highlight">Noch keine Spiele</span>`;
+        }
 
         let max180 = Math.max(...dataset.map(x => x.h180 || x.h180_total || 0));
         if (max180 > 0) {
