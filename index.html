@@ -880,6 +880,9 @@
         let maxEinzelObj = { val: 0, name: "-", team: "1" };
         let maxDoppelObj = { val: 0, name: "-", team: "1" };
 
+        // Die 4 Spieler, die im Einzel komplett ausgeblendet werden sollen
+        const einzelExcludedPlayers = ["michael müller", "patrik sejtz", "patrick seitz", "joel wielinski", "denis vanzidler"];
+
         allMatches.forEach(m => {
             let blockLower = m.block ? m.block.toLowerCase() : "";
             let spielerStr = m.spieler ? m.spieler.trim() : "";
@@ -887,13 +890,12 @@
 
             let isDoppel = blockLower.includes("doppel") || spielerStr.includes("/");
 
-            // Bei Doppel: Prüfen, ob einer der beiden Spieler ausgeblendet ist
-            if (isDoppel) {
-                let pairParts = spielerStr.split('/').map(s => s.trim());
-                if (pairParts.some(p => hiddenPlayers.includes(p))) return;
-            } else {
-                // Bei Einzel: Prüfen, ob der Spieler ausgeblendet ist
-                if (hiddenPlayers.includes(spielerStr)) return;
+            // Ausschliesslich im Einzel prüfen, ob einer der 4 Spieler (oder via Admin ausgeblendet) betroffen ist
+            if (!isDoppel) {
+                let pNameLower = spielerStr.toLowerCase();
+                if (einzelExcludedPlayers.includes(pNameLower) || hiddenPlayers.map(h => h.toLowerCase()).includes(pNameLower)) {
+                    return; // Überspringen, damit sie im Einzel nicht auftauchen
+                }
             }
 
             let legsWon = 0, legsLost = 0, isWin = false, isLoss = false;
